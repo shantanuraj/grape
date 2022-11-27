@@ -1,7 +1,14 @@
 import { JSDOM } from "jsdom";
 import { camelCase, chunk } from "lodash";
 
-import { Monster, MonsterStats } from "@/types";
+import {
+  AttackType,
+  HitzoneWeakness,
+  Monster,
+  MonsterPart,
+  MonsterStats,
+  Weakness,
+} from "@/types";
 import { getPage } from "@/wiki";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
@@ -45,6 +52,7 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
       description,
       hunterTips,
       habitats: [],
+      weaknesses: getWeaknesses(page),
       ...stats,
     };
 
@@ -87,4 +95,40 @@ const nodeContentsWithText = (
       ?.singleNodeValue?.parentElement?.textContent?.replace(`${text}: `, "")
       .trim() || ""
   );
+};
+
+const getWeaknesses = (page: Document): Monster["weaknesses"] => {
+  const tables = Array.from(
+    page
+      .getElementById("Weaknesses_by_hitzone")
+      ?.parentElement?.nextElementSibling?.querySelectorAll<HTMLTableElement>(
+        ".tabs-container .tabs-content table"
+      ) || []
+  );
+
+  const result = tables.map((table) => {
+    const [header, ...rows] = table.rows;
+    const attackTypes = Array.from(header.cells)
+      .slice(1)
+      .map((cell) => {
+        const attackType = camelCase(cell.textContent?.trim()) as AttackType;
+        return attackType;
+      });
+
+    return Object.fromEntries(
+      rows.map((row) => {
+        const [partName, ...weaknesses] = Array.from(row.cells);
+        const part = camelCase(partName.textContent?.trim()) as MonsterPart;
+        const weaknessesForPart = Object.fromEntries(
+          attackTypes.map((attackType, i) => {
+            const weakness = parseInt(weaknesses[i].textContent?.trim() || "0");
+            return [attackType, weakness];
+          })
+        ) as Weakness;
+        return [part, weaknessesForPart] as const;
+      })
+    ) as HitzoneWeakness;
+  });
+
+  return result;
 };

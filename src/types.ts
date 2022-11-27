@@ -16,12 +16,23 @@ export type AttackType =
 
 export type Weakness = Record<AttackType, number>;
 
-export type MonsterPart = "head" | "abdomen" | "back" | "leg" | "wing" | "tail";
+export type MonsterPart =
+  | "abdomen"
+  | "back"
+  | "crest"
+  | "head"
+  | "leg"
+  | "neck"
+  | "tail"
+  | "tailTip"
+  | "wing";
 
-export type HitzoneWeakness = Record<MonsterPart, Weakness>;
+export type HitzoneWeakness = {
+  [key in MonsterPart]?: Weakness;
+};
 
-export interface PhasedWeakness extends Array<Weakness> {
-  [phase: number]: Weakness;
+export interface PhasedWeakness extends Array<HitzoneWeakness> {
+  [phase: number]: HitzoneWeakness;
 }
 
 export interface MonsterStats {
@@ -38,4 +49,5 @@ export interface Monster extends MonsterStats {
   image: string;
   hunterTips: string;
   habitats: Habitat[];
+  weaknesses: PhasedWeakness;
 }

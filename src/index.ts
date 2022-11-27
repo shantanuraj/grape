@@ -5,9 +5,7 @@ async function main() {
     "Astalos",
     "Bazelgeuse",
   ].map(getMonster));
-  monsters.forEach((monster) => {
-    console.log(monster);
-  });
+  console.log(JSON.stringify(monsters, null, 2));
 }
 
 main();
