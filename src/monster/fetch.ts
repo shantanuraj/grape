@@ -1,26 +1,8 @@
 import { JSDOM } from "jsdom";
 
-import { Monster } from "@/types";
+import { Monster, MonsterStats } from "@/types";
 import { getPage } from "@/wiki";
-
-const nodeContentsWithText = (
-  page: Document,
-  text: string,
-  root: HTMLElement
-) => {
-  return (
-    page
-      .evaluate(
-        `//b[contains(text(),'${text}: ')]`,
-        root,
-        null,
-        9,
-        null
-      )
-      ?.singleNodeValue?.parentElement?.textContent?.replace(`${text}: `, "") ||
-    ""
-  );
-};
+import { camelCase, chunk } from "lodash";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
   const html = await getPage("monster", name);
@@ -31,6 +13,22 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
   try {
     const infoTable = page.querySelector<HTMLTableElement>("table.wikitable")!;
     const [_, imageRow, ...statsRows] = infoTable.rows;
+
+    const cells = chunk(
+      statsRows.flatMap((row) => {
+        return Array.from(row.cells).map(
+          (cell) => cell.textContent?.trim() || ""
+        );
+      }),
+      2
+    );
+
+    const stats = Object.fromEntries(
+      cells.map(([key, value]) => [
+        camelCase(key),
+        parsers[camelCase(key) as keyof MonsterStats](value),
+      ])
+    ) as unknown as MonsterStats;
 
     const intro = page.getElementById("Introduction")!;
 
@@ -43,6 +41,7 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
       description,
       hunterTips,
       habitats: [],
+      ...stats,
     };
 
     return monster;
@@ -51,3 +50,30 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
     return;
   }
 }
+
+const identity = <T>(x: T) => x;
+
+const parsers: Record<
+  keyof MonsterStats,
+  (value: string) => MonsterStats[keyof MonsterStats]
+> = {
+  element: identity,
+  resist: identity,
+  status: identity,
+  threatLv: identity,
+  type: identity,
+  weak: (val) => (val === "—" ? undefined : val),
+};
+
+const nodeContentsWithText = (
+  page: Document,
+  text: string,
+  root: HTMLElement
+) => {
+  return (
+    page
+      .evaluate(`//b[contains(text(),'${text}: ')]`, root, null, 9, null)
+      ?.singleNodeValue?.parentElement?.textContent?.replace(`${text}: `, "") ||
+    ""
+  );
+};

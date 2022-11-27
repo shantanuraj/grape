@@ -1,8 +1,13 @@
 import { getMonster } from "@/monster/fetch";
 
 async function main() {
-  const monster = await getMonster("Astalos");
-  console.log(monster);
+  const monsters = await Promise.all([
+    getMonster("Astalos"),
+    getMonster("Bazelgeuse"),
+  ]);
+  monsters.forEach((monster) => {
+    console.log(monster);
+  });
 }
 
 main();

@@ -24,7 +24,15 @@ export interface PhasedWeakness extends Array<Weakness> {
   [phase: number]: Weakness;
 }
 
-export interface Monster {
+export interface MonsterStats {
+  type: string;
+  threatLv: string;
+  element: string;
+  status: string;
+  weak?: string;
+  resist: string;
+}
+export interface Monster extends MonsterStats {
   name: string;
   description: string;
   image: string;
