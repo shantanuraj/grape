@@ -1,8 +1,8 @@
 import { JSDOM } from "jsdom";
+import { camelCase, chunk } from "lodash";
 
 import { Monster, MonsterStats } from "@/types";
 import { getPage } from "@/wiki";
-import { camelCase, chunk } from "lodash";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
   const html = await getPage("monster", name);
