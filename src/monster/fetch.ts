@@ -57,10 +57,9 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
 
 const identity = <T>(x: T) => x;
 
-const parsers: Record<
-  keyof MonsterStats,
-  (value: string) => MonsterStats[keyof MonsterStats]
-> = {
+const parsers: {
+  [key in keyof Required<MonsterStats>]: (value: string) => MonsterStats[key];
+} = {
   element: identity,
   resist: (val) => val.split("\n"),
   status: identity,
