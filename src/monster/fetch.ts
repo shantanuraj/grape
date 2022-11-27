@@ -24,10 +24,11 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
     );
 
     const stats = Object.fromEntries(
-      cells.map(([key, value]) => [
-        camelCase(key),
-        parsers[camelCase(key) as keyof MonsterStats](value),
-      ])
+      cells.map(([key, value]) => {
+        const parsedKey = camelCase(key) as keyof MonsterStats;
+        const parsedValue = parsers[parsedKey](value);
+        return [parsedKey, parsedValue];
+      })
     ) as unknown as MonsterStats;
 
     const intro = page.getElementById("Introduction")!;
