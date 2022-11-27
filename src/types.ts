@@ -1,4 +1,4 @@
-export type EntityType = "monster" | "armour";
+export type EntityType = "monster" | "armor";
 
 export interface Habitat {
   name: string;
@@ -27,6 +27,7 @@ export interface PhasedWeakness extends Array<Weakness> {
 export interface Monster {
   name: string;
   description: string;
+  image: string;
   hunterTips: string;
   habitats: Habitat[];
 }

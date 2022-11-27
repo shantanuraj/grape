@@ -1,9 +1,8 @@
-interface Message {
-  text: string;
+import { getMonster } from "@/monster/fetch";
+
+async function main() {
+  const monster = await getMonster("Astalos");
+  console.log(monster);
 }
 
-const message: Message = {
-  text: "Hello World",
-};
-
-console.log(message.text);
+main();
