@@ -17,7 +17,12 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
     const cells = chunk(
       statsRows.flatMap((row) => {
         return Array.from(row.cells).map(
-          (cell) => cell.textContent?.trim() || ""
+          (cell) => {
+            // Get line breaks out of the way
+            const brs = Array.from(cell.querySelectorAll("br"));
+            brs.forEach((br) => br.replaceWith("\n"));
+            return cell.textContent?.trim() || ""
+          }
         );
       }),
       2
@@ -59,10 +64,10 @@ const parsers: Record<
   (value: string) => MonsterStats[keyof MonsterStats]
 > = {
   element: identity,
-  resist: identity,
+  resist: val => val.split("\n"),
   status: identity,
   threatLv: (val) => parseInt(val.split(" / ")[0]),
-  type: identity,
+  type: val => val.split("\n"),
   weak: (val) => (val === "—" ? undefined : val),
 };
 
