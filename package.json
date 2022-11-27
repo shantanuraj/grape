@@ -7,10 +7,15 @@
     "format": "prettier --write src/**/*.ts"
   },
   "dependencies": {
+    "jsdom": "20.0.3",
+    "node-fetch": "2.6.7"
+  },
+  "devDependencies": {
+    "@types/jsdom": "20.0.1",
+    "@types/node-fetch": "2.x",
     "esbuild": "0.15.15",
     "esbuild-runner": "2.2.2",
     "prettier": "2.8.0",
-    "puppeteer": "19.3.0",
     "typescript": "4.9.3"
   }
 }
