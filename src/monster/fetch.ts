@@ -60,7 +60,7 @@ const parsers: Record<
   element: identity,
   resist: identity,
   status: identity,
-  threatLv: identity,
+  threatLv: (val) => parseInt(val.split(" / ")[0]),
   type: identity,
   weak: (val) => (val === "—" ? undefined : val),
 };
