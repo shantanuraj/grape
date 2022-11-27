@@ -71,6 +71,8 @@ const parsers: Record<
   weak: (val) => (val === "—" ? undefined : val),
 };
 
+const FIRST_ORDERED_NODE_TYPE = 9;
+
 const nodeContentsWithText = (
   page: Document,
   text: string,
@@ -78,7 +80,7 @@ const nodeContentsWithText = (
 ) => {
   return (
     page
-      .evaluate(`//b[contains(text(),'${text}: ')]`, root, null, 9, null)
+      .evaluate(`//b[contains(text(),'${text}: ')]`, root, null, FIRST_ORDERED_NODE_TYPE, null)
       ?.singleNodeValue?.parentElement?.textContent?.replace(`${text}: `, "") ||
     ""
   );
