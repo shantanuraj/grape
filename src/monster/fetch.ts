@@ -81,7 +81,7 @@ const nodeContentsWithText = (
   return (
     page
       .evaluate(`//b[contains(text(),'${text}: ')]`, root, null, FIRST_ORDERED_NODE_TYPE, null)
-      ?.singleNodeValue?.parentElement?.textContent?.replace(`${text}: `, "") ||
+      ?.singleNodeValue?.parentElement?.textContent?.replace(`${text}: `, "").trim() ||
     ""
   );
 };
