@@ -16,14 +16,12 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
 
     const cells = chunk(
       statsRows.flatMap((row) => {
-        return Array.from(row.cells).map(
-          (cell) => {
-            // Get line breaks out of the way
-            const brs = Array.from(cell.querySelectorAll("br"));
-            brs.forEach((br) => br.replaceWith("\n"));
-            return cell.textContent?.trim() || ""
-          }
-        );
+        return Array.from(row.cells).map((cell) => {
+          // Get line breaks out of the way
+          const brs = Array.from(cell.querySelectorAll("br"));
+          brs.forEach((br) => br.replaceWith("\n"));
+          return cell.textContent?.trim() || "";
+        });
       }),
       2
     );
@@ -64,10 +62,10 @@ const parsers: Record<
   (value: string) => MonsterStats[keyof MonsterStats]
 > = {
   element: identity,
-  resist: val => val.split("\n"),
+  resist: (val) => val.split("\n"),
   status: identity,
   threatLv: (val) => parseInt(val.split(" / ")[0]),
-  type: val => val.split("\n"),
+  type: (val) => val.split("\n"),
   weak: (val) => (val === "—" ? undefined : val),
 };
 
@@ -80,8 +78,14 @@ const nodeContentsWithText = (
 ) => {
   return (
     page
-      .evaluate(`//b[contains(text(),'${text}: ')]`, root, null, FIRST_ORDERED_NODE_TYPE, null)
-      ?.singleNodeValue?.parentElement?.textContent?.replace(`${text}: `, "").trim() ||
-    ""
+      .evaluate(
+        `//b[contains(text(),'${text}: ')]`,
+        root,
+        null,
+        FIRST_ORDERED_NODE_TYPE,
+        null
+      )
+      ?.singleNodeValue?.parentElement?.textContent?.replace(`${text}: `, "")
+      .trim() || ""
   );
 };
