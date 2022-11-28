@@ -4,9 +4,12 @@ import { camelCase, chunk } from "lodash";
 import {
   AttackType,
   HitzoneWeakness,
+  Material,
+  MaterialsByRank,
   Monster,
   MonsterPart,
   MonsterStats,
+  Rank,
   Weakness,
 } from "@/types";
 import { getPage } from "@/wiki";
@@ -53,6 +56,7 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
       hunterTips,
       habitats: [],
       weaknesses: getWeaknesses(page),
+      materials: getMaterials(page),
       ...stats,
     };
 
@@ -64,15 +68,16 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
 }
 
 const identity = <T>(x: T) => x;
+const readLines = (text: string) => text.split("\n").map((l) => l.trim());
 
 const parsers: {
   [key in keyof Required<MonsterStats>]: (value: string) => MonsterStats[key];
 } = {
   element: identity,
-  resist: (val) => val.split("\n"),
+  resist: readLines,
   status: identity,
   threatLv: (val) => parseInt(val.split(" / ")[0]),
-  type: (val) => val.split("\n"),
+  type: readLines,
   weak: (val) => (val === "—" ? undefined : val),
 };
 
@@ -97,14 +102,18 @@ const nodeContentsWithText = (
   );
 };
 
-const getWeaknesses = (page: Document): Monster["weaknesses"] => {
-  const tables = Array.from(
+const getTablesForHeading = (page: Document, heading: string) => {
+  return Array.from(
     page
-      .getElementById("Weaknesses_by_hitzone")
+      .getElementById(heading)
       ?.parentElement?.nextElementSibling?.querySelectorAll<HTMLTableElement>(
         ".tabs-container .tabs-content table"
       ) || []
   );
+};
+
+const getWeaknesses = (page: Document): Monster["weaknesses"] => {
+  const tables = getTablesForHeading(page, "Weaknesses_by_hitzone");
 
   const result = tables.map((table) => {
     const [header, ...rows] = table.rows;
@@ -131,4 +140,73 @@ const getWeaknesses = (page: Document): Monster["weaknesses"] => {
   });
 
   return result;
+};
+
+const getMaterials = (page: Document): Monster["materials"] => {
+  const tables = getTablesForHeading(page, "Monster_materials");
+  const ranks = Array.from(
+    tables[0].closest("div.tabs")?.querySelectorAll("label") || []
+  )
+    .map((l) => l.textContent?.slice(0, 2))
+    .filter((r): r is Rank => !!r);
+
+  const result = Object.fromEntries(
+    ranks.map((rank, i) => {
+      const table = tables[i];
+
+      const [header, ...rows] = table.rows;
+      const materialFields = Array.from(header.cells)
+        .slice(1)
+        .map((cell) => {
+          const field = camelCase(cell.textContent?.trim()) as keyof Material;
+          return field;
+        });
+
+      const materials = rows.map((row) => {
+        const [materialEmblem, ...materialValues] = Array.from(row.cells);
+
+        return Object.fromEntries([
+          ["emblem", materialEmblem.querySelector("img")?.src || ""],
+          ...materialFields.map((field, i) => {
+            const cell = materialValues[i];
+            // Get line breaks out of the way
+            const brs = Array.from(cell.querySelectorAll("br"));
+            brs.forEach((br) => br.replaceWith("\n"));
+            const value = materialParsers[field](
+              cell.textContent?.trim() || ""
+            );
+            return [field, value] as const;
+          }),
+        ]) as unknown as Material;
+      });
+
+      return [rank, materials] as const;
+    })
+  ) as MaterialsByRank;
+
+  return result;
+};
+
+const readPercentage = (text: string) => parseInt(text.replace("%", ""));
+
+const readScopedPercentage = <T>(text: string): Array<[T, number]> => {
+  if (!text) return [];
+  return text.split("\n").map((l) => {
+    const [chance, scope = ''] = l.split("%");
+    return [camelCase(scope.slice(1, -1)) as T, parseInt(chance)];
+  });
+};
+
+const materialParsers: {
+  [key in keyof Required<Material>]: (value: string) => Material[key];
+} = {
+  emblem: identity,
+  materialName: identity,
+  nameJaZh: readLines,
+  target: readPercentage,
+  carve: readScopedPercentage,
+  capture: readPercentage,
+  partBreak: readScopedPercentage,
+  drop: readScopedPercentage,
+  palico: readPercentage,
 };

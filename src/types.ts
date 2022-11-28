@@ -19,6 +19,7 @@ export type Weakness = Record<AttackType, number>;
 export type MonsterPart =
   | "abdomen"
   | "back"
+  | "body"
   | "crest"
   | "head"
   | "leg"
@@ -43,6 +44,25 @@ export interface MonsterStats {
   weak?: string;
   resist: string[];
 }
+
+export type Rank = "LR" | "MR" | "HR";
+
+export interface Material {
+  materialName: string;
+  nameJaZh: string[];
+  emblem: string;
+  target?: number;
+  carve: Array<[part: MonsterPart, amount: number]>;
+  capture?: number;
+  partBreak: Array<[part: MonsterPart, amount: number]>;
+  drop: Array<[conditions: string, amount: number]>;
+  palico?: number;
+}
+
+export type MaterialsByRank = {
+  [key in Rank]?: Material[];
+};
+
 export interface Monster extends MonsterStats {
   name: string;
   description: string;
@@ -50,4 +70,5 @@ export interface Monster extends MonsterStats {
   hunterTips: string;
   habitats: Habitat[];
   weaknesses: PhasedWeakness;
+  materials: MaterialsByRank;
 }
