@@ -52,10 +52,10 @@ export interface Material {
   nameJaZh: string[];
   emblem: string;
   target?: number;
-  carve: Array<[part: MonsterPart, amount: number]>;
+  carve?: Record<MonsterPart, { amount: number }>;
   capture?: number;
-  partBreak: Array<[part: MonsterPart, amount: number]>;
-  drop: Array<[conditions: string, amount: number]>;
+  partBreak?: Record<MonsterPart, { amount: number }>;
+  drop?: Record<string, { amount: number }>;
   palico?: number;
 }
 

@@ -189,12 +189,16 @@ const getMaterials = (page: Document): Monster["materials"] => {
 
 const readPercentage = (text: string) => parseInt(text.replace("%", ""));
 
-const readScopedPercentage = <T>(text: string): Array<[T, number]> => {
-  if (!text) return [];
-  return text.split("\n").map((l) => {
-    const [chance, scope = ''] = l.split("%");
-    return [camelCase(scope.slice(1, -1)) as T, parseInt(chance)];
-  });
+const readScopedPercentage = <T extends string>(
+  text: string
+): Record<T, { amount: number }> | undefined => {
+  if (!text) return undefined;
+  return Object.fromEntries(
+    text.split("\n").map((l) => {
+      const [chance, scope = ""] = l.split("%");
+      return [camelCase(scope.slice(1, -1)) as T, { amount: parseInt(chance) }];
+    })
+  ) as Record<T, { amount: number }>;
 };
 
 const materialParsers: {
