@@ -13,6 +13,7 @@ import {
   Weakness,
 } from "@/types";
 import { getPage } from "@/wiki";
+import { cleanLines } from "@/utils";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
   const html = await getPage(name, "monster");
@@ -26,12 +27,7 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
 
     const cells = chunk(
       statsRows.flatMap((row) => {
-        return Array.from(row.cells).map((cell) => {
-          // Get line breaks out of the way
-          const brs = Array.from(cell.querySelectorAll("br"));
-          brs.forEach((br) => br.replaceWith("\n"));
-          return cell.textContent?.trim() || "";
-        });
+        return Array.from(row.cells).map(cleanLines);
       }),
       2
     );
