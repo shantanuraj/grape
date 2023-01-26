@@ -2,7 +2,7 @@ import fetch from "node-fetch";
 
 import { EntityType } from "@/types";
 
-const getURL = (entity: EntityType, name: string) => {
+const getURL = (name: string, entity?: EntityType) => {
   const title = (() => {
     switch (entity) {
       case "monster":
@@ -18,8 +18,8 @@ const getURL = (entity: EntityType, name: string) => {
   return url;
 };
 
-export const getPage = (entity: EntityType, name: string) =>
-  fetch(getURL(entity, name).toString())
+export const getPage = (name: string, entity?: EntityType) =>
+  fetch(getURL(name, entity).toString())
     .then((res) => res.text())
     .catch((err) => {
       console.error(err);

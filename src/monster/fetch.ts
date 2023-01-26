@@ -15,7 +15,7 @@ import {
 import { getPage } from "@/wiki";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
-  const html = await getPage("monster", name);
+  const html = await getPage(name, "monster");
   if (!html) return;
   const dom = new JSDOM(html);
   const page = dom.window.document;
