@@ -37,11 +37,12 @@ export interface PhasedWeakness extends Array<HitzoneWeakness> {
 }
 
 export interface MonsterStats {
-  type: string[];
+  type: string;
+  class: string;
   threatLv: number;
   element: string;
-  status: string;
-  weak?: string;
+  status: string[];
+  weak?: string[];
   resist: string[];
 }
 
