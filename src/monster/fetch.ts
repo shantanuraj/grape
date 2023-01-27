@@ -32,21 +32,17 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
       2
     );
 
-    const [monsterType, monsterClass] = readLines(cells[0][1]);
+    const cellData = Object.fromEntries(cells);
 
-    const splitTypeCells = [
-      ["Type", monsterType],
-      ["Class", monsterClass],
-      ...cells.slice(1),
-    ];
-
-    const stats = Object.fromEntries(
-      splitTypeCells.map(([key, value]) => {
-        const parsedKey = camelCase(key) as keyof MonsterStats;
-        const parsedValue = parsers[parsedKey](value);
-        return [parsedKey, parsedValue];
-      })
-    ) as unknown as MonsterStats;
+    const stats: MonsterStats = {
+      type: readLines(cellData["Type"])[0],
+      class: readLines(cellData["Type"])[1],
+      threatLv: parseInt(cellData["Threat lv"].split(" / ")[0]),
+      element: cellData["Element"],
+      status: readLines(cellData["Status"]),
+      resist: readLines(cellData["Resist"]),
+      weak: cellData["Weak"] === "—" ? undefined : readLines(cellData["Weak"]),
+    };
 
     const intro = page.getElementById("Introduction")!;
 
@@ -73,18 +69,6 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
 
 const identity = <T>(x: T) => x;
 const readLines = (text: string) => text.split("\n").map((l) => l.trim());
-
-const parsers: {
-  [key in keyof Required<MonsterStats>]: (value: string) => MonsterStats[key];
-} = {
-  element: identity,
-  resist: readLines,
-  status: readLines,
-  threatLv: (val) => parseInt(val.split(" / ")[0]),
-  type: identity,
-  class: identity,
-  weak: (val) => (val === "—" ? undefined : readLines(val)),
-};
 
 const FIRST_ORDERED_NODE_TYPE = 9;
 
