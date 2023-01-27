@@ -48,10 +48,10 @@ export interface MonsterStats {
   resist: string[];
 }
 
+export type KinsectExtract = "white" | "orange" | "red";
+
 export type Kinsect = {
-  white: string[];
-  orange: string[];
-  red: string[];
+  [key in KinsectExtract]: string[];
 };
 
 export type Rank = "LR" | "MR" | "HR";

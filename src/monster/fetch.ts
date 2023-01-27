@@ -2,6 +2,7 @@ import { JSDOM } from "jsdom";
 import { camelCase, chunk } from "lodash";
 
 import {
+  KinsectExtract,
   Material,
   MaterialsByRank,
   Monster,
@@ -156,7 +157,7 @@ const getKinsectData = (page: Document): Monster["kinsect"] => {
         .toLowerCase();
 
       if (["white", "orange", "red"].includes(extract))
-        kinsectData[extract as "white" | "orange" | "red"].push(part);
+        kinsectData[extract as KinsectExtract].push(part);
     });
   }
 
