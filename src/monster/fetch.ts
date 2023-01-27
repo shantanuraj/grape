@@ -2,18 +2,15 @@ import { JSDOM } from "jsdom";
 import { camelCase, chunk } from "lodash";
 
 import {
-  AttackType,
-  HitzoneWeakness,
   Material,
   MaterialsByRank,
   Monster,
-  MonsterPart,
   MonsterStats,
+  PhasedWeakness,
   Rank,
-  Weakness,
 } from "@/types";
 import { getPage } from "@/wiki";
-import { cleanLines } from "@/utils";
+import { cleanLines, getTablesForId, toCamel } from "@/utils";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
   const html = await getPage(name, "monster");
@@ -102,33 +99,34 @@ const getTablesForHeading = (page: Document, heading: string) => {
 };
 
 const getWeaknesses = (page: Document): Monster["weaknesses"] => {
-  const tables = getTablesForHeading(page, "Weaknesses_by_hitzone");
+  const weaknessTables = getTablesForId(page, "Weaknesses_by_hitzone");
 
-  const result = tables.map((table) => {
-    const [header, ...rows] = table.rows;
-    const attackTypes = Array.from(header.cells)
-      .slice(1)
-      .map((cell) => {
-        const attackType = camelCase(cell.textContent?.trim()) as AttackType;
-        return attackType;
-      });
+  const weaknesses = Object.fromEntries(
+    weaknessTables.map((table) => {
+      const [header, ...rows] = table.table.rows;
+      const elements = Array.from(header.cells).slice(1).map(toCamel);
 
-    return Object.fromEntries(
-      rows.map((row) => {
-        const [partName, ...weaknesses] = Array.from(row.cells);
-        const part = camelCase(partName.textContent?.trim()) as MonsterPart;
-        const weaknessesForPart = Object.fromEntries(
-          attackTypes.map((attackType, i) => {
-            const weakness = parseInt(weaknesses[i].textContent?.trim() || "0");
-            return [attackType, weakness];
-          })
-        ) as Weakness;
-        return [part, weaknessesForPart] as const;
-      })
-    ) as HitzoneWeakness;
-  });
+      const weaknessData = Object.fromEntries(
+        rows.map((row) => {
+          const [monsterPart, ...damageValues] = Array.from(row.cells);
+          const part = toCamel(monsterPart);
+          const weaknessesForPart = Object.fromEntries(
+            elements.map((element, i) => {
+              const weakness = parseInt(
+                damageValues[i].textContent?.trim() || "0"
+              );
+              return [element, weakness];
+            })
+          );
+          return [part, weaknessesForPart];
+        })
+      );
 
-  return result;
+      return [table.name, weaknessData];
+    })
+  ) as PhasedWeakness;
+
+  return weaknesses;
 };
 
 const getMaterials = (page: Document): Monster["materials"] => {
@@ -146,10 +144,7 @@ const getMaterials = (page: Document): Monster["materials"] => {
       const [header, ...rows] = table.rows;
       const materialFields = Array.from(header.cells)
         .slice(1)
-        .map((cell) => {
-          const field = camelCase(cell.textContent?.trim()) as keyof Material;
-          return field;
-        });
+        .map(toCamel) as (keyof Material)[];
 
       const materials = rows.map((row) => {
         const [materialEmblem, ...materialValues] = Array.from(row.cells);

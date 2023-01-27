@@ -32,9 +32,11 @@ export type HitzoneWeakness = {
   [key in MonsterPart]?: Weakness;
 };
 
-export interface PhasedWeakness extends Array<HitzoneWeakness> {
-  [phase: number]: HitzoneWeakness;
-}
+export type Phase = "Normal phase" | "Phase 1" | "Phase 2" | "Phase 3";
+
+export type PhasedWeakness = {
+  [phase in Phase]?: HitzoneWeakness;
+} & { "Normal phase": HitzoneWeakness };
 
 export interface MonsterStats {
   type: string;
