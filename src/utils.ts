@@ -17,6 +17,25 @@ type TabTable = {
 };
 
 /**
+ * Gets a (single) table for a wiki section. Table must be immediately below heading.
+ * @param page document
+ * @param id HTML id of the section
+ * @returns an array of TabTable objects (containing the tab name and table)
+ */
+export const getTableForId = (
+  page: Document,
+  id: string
+): HTMLTableElement | null | undefined => {
+  const nextElement =
+    page.getElementById(id)?.parentElement?.nextElementSibling;
+
+  if (nextElement?.className.includes("wikitable"))
+    return <HTMLTableElement>nextElement;
+
+  return nextElement?.querySelector<HTMLTableElement>("table.wikitable");
+};
+
+/**
  * Gets all tab tables for a wiki section. Table must be immediately below heading.
  * @param page document
  * @param id HTML id of the section

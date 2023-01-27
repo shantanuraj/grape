@@ -10,7 +10,7 @@ import {
   Rank,
 } from "@/types";
 import { getPage } from "@/wiki";
-import { cleanLines, getTablesForId, toCamel } from "@/utils";
+import { cleanLines, getTableForId, getTablesForId, toCamel } from "@/utils";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
   const html = await getPage(name, "monster");
@@ -53,7 +53,7 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
       hunterTips,
       habitats: [],
       weaknesses: getWeaknesses(page),
-      kinsect: { white: [], orange: [], red: [] },
+      kinsect: getKinsectData(page),
       breakeable: [],
       severable: [],
       materials: getMaterials(page),
@@ -130,6 +130,38 @@ const getWeaknesses = (page: Document): Monster["weaknesses"] => {
   ) as PhasedWeakness;
 
   return weaknesses;
+};
+
+const getKinsectData = (page: Document): Monster["kinsect"] => {
+  const kinsectData: Monster["kinsect"] = {
+    white: [],
+    orange: [],
+    red: [],
+  };
+
+  const partTable = getTableForId(page, "Monster_part_data");
+  if (!partTable) return kinsectData;
+
+  const [header, ...rows] = partTable.rows;
+
+  const kinsectColumn = Array.from(header.cells)
+    .map(toCamel)
+    .findIndex((i) => i === "kinsectExtract");
+
+  if (kinsectColumn > 0) {
+    rows.forEach((row) => {
+      const part = row.cells[0].textContent!;
+      const extract = row.cells[kinsectColumn]
+        // todo - trailing \n not getting trimmed
+        .textContent!.trim()
+        .toLowerCase();
+
+      if (["white", "orange", "red"].includes(extract))
+        kinsectData[extract as "white" | "orange" | "red"].push(part);
+    });
+  }
+
+  return kinsectData;
 };
 
 const getMaterials = (page: Document): Monster["materials"] => {
