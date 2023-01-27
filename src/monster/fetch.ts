@@ -150,9 +150,8 @@ const getKinsectData = (page: Document): Monster["kinsect"] => {
 
   if (kinsectColumn > 0) {
     rows.forEach((row) => {
-      const part = row.cells[0].textContent!;
+      const part = row.cells[0].textContent!.trim();
       const extract = row.cells[kinsectColumn]
-        // todo - trailing \n not getting trimmed
         .textContent!.trim()
         .toLowerCase();
 
