@@ -53,6 +53,9 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
       hunterTips,
       habitats: [],
       weaknesses: getWeaknesses(page),
+      kinsect: { white: [], orange: [], red: [] },
+      breakeable: [],
+      severable: [],
       materials: getMaterials(page),
       ...stats,
     };

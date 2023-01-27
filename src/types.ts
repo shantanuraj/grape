@@ -48,6 +48,12 @@ export interface MonsterStats {
   resist: string[];
 }
 
+export type Kinsect = {
+  white: string[];
+  orange: string[];
+  red: string[];
+};
+
 export type Rank = "LR" | "MR" | "HR";
 
 export interface Material {
@@ -73,5 +79,8 @@ export interface Monster extends MonsterStats {
   hunterTips: string;
   habitats: Habitat[];
   weaknesses: PhasedWeakness;
+  kinsect: Kinsect;
+  breakeable: string[];
+  severable: string[];
   materials: MaterialsByRank;
 }
