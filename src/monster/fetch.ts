@@ -11,6 +11,8 @@ import {
   MonsterStats,
   PhasedWeakness,
   Rank,
+  StatusEffect,
+  STATUS_EFFECTS,
 } from "@/types";
 import { getPage } from "@/wiki";
 import {
@@ -19,7 +21,7 @@ import {
   getTablesForId,
   getTickedRows,
   toCamel,
-  getElements,
+  getMatchingElements,
 } from "@/utils";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
@@ -45,10 +47,19 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
       type: readLines(cellData["Type"])[0],
       class: readLines(cellData["Type"])[1],
       threatLv: parseInt(cellData["Threat lv"].split(" / ")[0]),
-      element: getElements(cellData["Element"] as string),
-      status: readLines(cellData["Status"]),
-      resist: getElements(readLines(cellData["Resist"])),
-      weak: getElements(readLines(cellData["Weak"])),
+      element: getMatchingElements<Element>(
+        ELEMENTS,
+        cellData["Element"] as string
+      ),
+      status: getMatchingElements<StatusEffect>(
+        STATUS_EFFECTS,
+        readLines(cellData["Status"])
+      ),
+      resist: getMatchingElements<Element>(
+        ELEMENTS,
+        readLines(cellData["Resist"])
+      ),
+      weak: getMatchingElements<Element>(ELEMENTS, readLines(cellData["Weak"])),
     };
 
     const intro = page.getElementById("Introduction")!;

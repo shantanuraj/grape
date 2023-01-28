@@ -98,20 +98,36 @@ export function getTickedRows(
   return keys.filter((_, i) => values[i].includes("✔"));
 }
 
-export function getElements(input: string[]): Element[];
-export function getElements(input: string): Element | undefined;
-export function getElements(
+/**
+ * If a string is part of a reference array, get the reference item, or undefined if it is not.
+ * For an array of strings, filter out elements which are not part of the reference array.
+ *
+ * Note: the reference item comparison uses startsWith() as some items can be shortened,
+ * e.g. "ice" for "iceblight"
+ *
+ * @param list reference array
+ * @param input item or array of items to check
+ * @returns a string or array of strings matching the reference array's type
+ */
+export function getMatchingElements<T>(
+  reference: readonly T[],
+  input: string[]
+): T[];
+export function getMatchingElements<T>(
+  reference: readonly T[],
+  input: string
+): T | undefined;
+export function getMatchingElements<T extends string>(
+  reference: readonly T[],
   input: string | string[]
-): Element | Element[] | undefined {
+): T | T[] | undefined {
   const getElementOrUndefined = (s: string) => {
     const cleanString = toCamel(s);
-
-    return ELEMENTS.includes(cleanString as Element)
-      ? (cleanString as Element)
-      : undefined;
+    if (!cleanString) return undefined;
+    return reference.find((i) => i.startsWith(cleanString));
   };
 
   if (typeof input === "string") return getElementOrUndefined(input);
 
-  return input.map(getElementOrUndefined).filter(Boolean) as Element[];
+  return input.map(getElementOrUndefined).filter(Boolean) as T[];
 }
