@@ -4,7 +4,7 @@ export interface Habitat {
   name: string;
 }
 
-export type AttackType =
+export type Element =
   | "sever"
   | "blunt"
   | "ammo"
@@ -14,7 +14,7 @@ export type AttackType =
   | "thunder"
   | "dragon";
 
-export type Weakness = Record<AttackType, number>;
+export type Weakness = Record<Element, number>;
 
 export type MonsterPart =
   | "abdomen"
