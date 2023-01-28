@@ -6,6 +6,7 @@ import {
   ELEMENTS,
   KinsectExtract,
   Material,
+  MaterialChance,
   MaterialsByRank,
   Monster,
   MonsterStats,
@@ -270,21 +271,24 @@ const getMaterials = (page: Document): Monster["materials"] => {
       const rank = table.name.slice(0, 2);
 
       const [header, ...rows] = materialTable.rows;
-      const materialFields = Array.from(header.cells)
+      const materialColumns = Array.from(header.cells)
         .slice(1)
         .map(toCamel) as (keyof Material)[];
 
       const materials = rows.map((row) => {
         const [materialEmblem, ...materialValues] = Array.from(row.cells);
 
-        return Object.fromEntries([
+        const materialData = [
           ["emblem", materialEmblem.querySelector("img")?.src || ""],
-          ...materialFields.map((field, i) => {
+          ...materialColumns.map((column, i) => {
             const cell = toCleanText(materialValues[i]);
-            const value = materialParsers[field](cell || "");
-            return [field, value] as const;
+            if (!cell) return undefined;
+            const value = materialParsers[column](cell);
+            return [column, value];
           }),
-        ]) as unknown as Material;
+        ].filter(Boolean) as [string, any][];
+
+        return Object.fromEntries(materialData) as Material;
       });
 
       return [rank, materials] as const;
@@ -294,18 +298,36 @@ const getMaterials = (page: Document): Monster["materials"] => {
   return result;
 };
 
-const readPercentage = (text: string) => parseInt(text.replace("%", ""));
+/**
+ * Get the amount of times a material can be obtained if the text includes x[number], e.g. x2, x3
+ * @param text string to check
+ * @returns number or undefined
+ */
+const getMaterialAmount = (text: string): number | undefined => {
+  const matches = text.match(/.*x(\d).*/);
+
+  if (!matches) return;
+  return parseInt(matches[1]);
+};
+
+const readPercentage = (text: string) => {
+  const amount = getMaterialAmount(text);
+  return { percentage: parseInt(text.replace("%", "")), amount };
+};
 
 const readScopedPercentage = <T extends string>(
   text: string
-): Record<T, { amount: number }> | undefined => {
+): Record<T, MaterialChance> | undefined => {
   if (!text) return undefined;
   return Object.fromEntries(
     text.split("\n").map((l) => {
       const [chance, scope = ""] = l.split("%");
-      return [camelCase(scope.slice(1, -1)) as T, { amount: parseInt(chance) }];
+      return [
+        camelCase(scope.slice(1, -1)) as T,
+        { percentage: parseInt(chance) },
+      ];
     })
-  ) as Record<T, { amount: number }>;
+  ) as Record<T, { percentage: number }>;
 };
 
 const materialParsers: {

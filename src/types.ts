@@ -72,16 +72,24 @@ export type Quest = {
 
 export type Rank = "LR" | "MR" | "HR";
 
+export type MaterialChance = {
+  amount?: number;
+  percentage: number;
+};
+
 export interface Material {
   materialName: string;
   nameJaZh: string[];
   emblem: string;
-  target?: number;
-  carve?: Record<MonsterPart, { amount: number }>;
-  capture?: number;
-  partBreak?: Record<MonsterPart, { amount: number }>;
-  drop?: Record<string, { amount: number }>;
-  palico?: number;
+  target?: MaterialChance;
+  carve?: Record<MonsterPart, MaterialChance>;
+  capture?: MaterialChance;
+  partBreak?: Record<MonsterPart, MaterialChance>;
+  drop?: {
+    normal?: MaterialChance;
+    riding?: MaterialChance;
+  };
+  palico?: MaterialChance;
 }
 
 export type MaterialsByRank = {
