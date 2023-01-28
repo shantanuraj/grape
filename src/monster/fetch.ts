@@ -10,7 +10,6 @@ import {
   Monster,
   MonsterStats,
   PhasedWeakness,
-  Rank,
   StatusEffect,
   STATUS_EFFECTS,
 } from "@/types";
@@ -115,16 +114,6 @@ const nodeContentsWithText = (
       )
       ?.singleNodeValue?.parentElement?.textContent?.replace(`${text}: `, "")
       .trim() || ""
-  );
-};
-
-const getTablesForHeading = (page: Document, heading: string) => {
-  return Array.from(
-    page
-      .getElementById(heading)
-      ?.parentElement?.nextElementSibling?.querySelectorAll<HTMLTableElement>(
-        ".tabs-container .tabs-content table"
-      ) || []
   );
 };
 
@@ -272,18 +261,14 @@ const getQuests = (page: Document): Monster["quests"] => {
 };
 
 const getMaterials = (page: Document): Monster["materials"] => {
-  const tables = getTablesForHeading(page, "Monster_materials");
-  const ranks = Array.from(
-    tables[0].closest("div.tabs")?.querySelectorAll("label") || []
-  )
-    .map((l) => l.textContent?.slice(0, 2))
-    .filter((r): r is Rank => !!r);
+  const tables = getTablesForId(page, "Monster_materials");
 
   const result = Object.fromEntries(
-    ranks.map((rank, i) => {
-      const table = tables[i];
+    tables.map((table) => {
+      const materialTable = table.table;
+      const rank = table.name.slice(0, 2);
 
-      const [header, ...rows] = table.rows;
+      const [header, ...rows] = materialTable.rows;
       const materialFields = Array.from(header.cells)
         .slice(1)
         .map(toCamel) as (keyof Material)[];
@@ -294,13 +279,8 @@ const getMaterials = (page: Document): Monster["materials"] => {
         return Object.fromEntries([
           ["emblem", materialEmblem.querySelector("img")?.src || ""],
           ...materialFields.map((field, i) => {
-            const cell = materialValues[i];
-            // Get line breaks out of the way
-            const brs = Array.from(cell.querySelectorAll("br"));
-            brs.forEach((br) => br.replaceWith("\n"));
-            const value = materialParsers[field](
-              cell.textContent?.trim() || ""
-            );
+            const cell = toCleanText(materialValues[i]);
+            const value = materialParsers[field](cell || "");
             return [field, value] as const;
           }),
         ]) as unknown as Material;
