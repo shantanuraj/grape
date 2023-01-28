@@ -5,11 +5,11 @@ import { camelCase } from "lodash";
  * @param el HTML element
  * @returns string with text content from the element, or empty string
  */
-export function toCleanText(el: HTMLElement): string {
+export const toCleanText = (el: HTMLElement): string => {
   const brs = Array.from(el.querySelectorAll("br"));
   brs.forEach((br) => br.replaceWith("\n"));
   return el.textContent?.trim() || "";
-}
+};
 
 /**
  * Get the element after a wiki section heading
@@ -77,10 +77,10 @@ export const getTablesForId = (page: Document, id: string): TabTable[] => {
  * @param el HTML element
  * @returns camelCase string
  */
-export function toCamel(input: HTMLElement | string): string {
+export const toCamel = (input: HTMLElement | string): string => {
   if (typeof input === "string") return camelCase(input.trim());
   return camelCase(input.textContent?.trim());
-}
+};
 
 /**
  * Get a list of rows where the given column includes a tick (✔)
@@ -88,10 +88,10 @@ export function toCamel(input: HTMLElement | string): string {
  * @param column name of column to check for ticks
  * @returns array of strings (text content of column 1 for each matching row)
  */
-export function getTickedRows(
+export const getTickedRows = (
   table: HTMLTableElement,
   column: string
-): string[] {
+): string[] => {
   const [header, ...rows] = table.rows;
   const headerNames = Array.from(header.cells).map(toCamel);
 
@@ -104,7 +104,7 @@ export function getTickedRows(
   );
 
   return keys.filter((_, i) => values[i].includes("✔"));
-}
+};
 
 /**
  * If a string is part of a reference array, get the reference item, or undefined if it is not.
@@ -117,18 +117,14 @@ export function getTickedRows(
  * @param input item or array of items to check
  * @returns a string or array of strings matching the reference array's type
  */
-export function getMatchingElements<T>(
-  reference: readonly T[],
-  input: string[]
-): T[];
-export function getMatchingElements<T>(
-  reference: readonly T[],
-  input: string
-): T | undefined;
-export function getMatchingElements<T extends string>(
+type GetMatchingElementsType = {
+  <T>(reference: readonly T[], input: string): T | undefined;
+  <T>(reference: readonly T[], input: string[]): T[];
+};
+export const getMatchingElements: GetMatchingElementsType = <T extends string>(
   reference: readonly T[],
   input: string | string[]
-): T | T[] | undefined {
+) => {
   const getElementOrUndefined = (s: string) => {
     const cleanString = toCamel(s);
     if (!cleanString) return undefined;
@@ -138,4 +134,4 @@ export function getMatchingElements<T extends string>(
   if (typeof input === "string") return getElementOrUndefined(input);
 
   return input.map(getElementOrUndefined).filter(Boolean) as T[];
-}
+};
