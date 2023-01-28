@@ -2,6 +2,8 @@ import { JSDOM } from "jsdom";
 import { camelCase, chunk } from "lodash";
 
 import {
+  Element,
+  ELEMENTS,
   KinsectExtract,
   Material,
   MaterialsByRank,
@@ -37,12 +39,13 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
     );
 
     const cellData = Object.fromEntries(cells);
+    const elementText = toCamel(cellData["Element"]) as Element;
 
     const stats: MonsterStats = {
       type: readLines(cellData["Type"])[0],
       class: readLines(cellData["Type"])[1],
       threatLv: parseInt(cellData["Threat lv"].split(" / ")[0]),
-      element: cellData["Element"],
+      element: ELEMENTS.includes(elementText) ? elementText : undefined,
       status: readLines(cellData["Status"]),
       resist: readLines(cellData["Resist"]),
       weak: cellData["Weak"] === "—" ? undefined : readLines(cellData["Weak"]),

@@ -4,17 +4,12 @@ export interface Habitat {
   name: string;
 }
 
-export type Element =
-  | "sever"
-  | "blunt"
-  | "ammo"
-  | "fire"
-  | "water"
-  | "ice"
-  | "thunder"
-  | "dragon";
+export const ELEMENTS = ["fire", "water", "ice", "thunder", "dragon"] as const;
+export type Element = typeof ELEMENTS[number];
 
-export type Weakness = Record<Element, number>;
+export type AttackType = "sever" | "blunt" | "ammo" | Element;
+
+export type Weakness = Record<AttackType, number>;
 
 export type MonsterPart =
   | "abdomen"
@@ -54,7 +49,7 @@ export interface MonsterStats {
   type: string;
   class: string;
   threatLv: number;
-  element: string;
+  element?: Element;
   status: string[];
   weak?: string[];
   resist: string[];
