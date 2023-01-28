@@ -1,4 +1,5 @@
 import { camelCase } from "lodash";
+import { Element, ELEMENTS } from "./types";
 
 /**
  * Get an element's text content, with line breaks and extra whitespace removed.
@@ -94,5 +95,23 @@ export function getTickedRows(
     toCleanText(row.cells[columnIndex])
   );
 
-  return keys.filter((k, i) => values[i].includes("✔"));
+  return keys.filter((_, i) => values[i].includes("✔"));
+}
+
+export function getElements(input: string[]): Element[];
+export function getElements(input: string): Element | undefined;
+export function getElements(
+  input: string | string[]
+): Element | Element[] | undefined {
+  const getElementOrUndefined = (s: string) => {
+    const cleanString = toCamel(s);
+
+    return ELEMENTS.includes(cleanString as Element)
+      ? (cleanString as Element)
+      : undefined;
+  };
+
+  if (typeof input === "string") return getElementOrUndefined(input);
+
+  return input.map(getElementOrUndefined).filter(Boolean) as Element[];
 }

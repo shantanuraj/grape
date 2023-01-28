@@ -51,8 +51,8 @@ export interface MonsterStats {
   threatLv: number;
   element?: Element;
   status: string[];
-  weak?: string[];
-  resist: string[];
+  weak?: Element[];
+  resist: Element[];
 }
 
 export type KinsectExtract = "white" | "orange" | "red";

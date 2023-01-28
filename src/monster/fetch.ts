@@ -19,6 +19,7 @@ import {
   getTablesForId,
   getTickedRows,
   toCamel,
+  getElements,
 } from "@/utils";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
@@ -39,16 +40,15 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
     );
 
     const cellData = Object.fromEntries(cells);
-    const elementText = toCamel(cellData["Element"]) as Element;
 
     const stats: MonsterStats = {
       type: readLines(cellData["Type"])[0],
       class: readLines(cellData["Type"])[1],
       threatLv: parseInt(cellData["Threat lv"].split(" / ")[0]),
-      element: ELEMENTS.includes(elementText) ? elementText : undefined,
+      element: getElements(cellData["Element"] as string),
       status: readLines(cellData["Status"]),
-      resist: readLines(cellData["Resist"]),
-      weak: cellData["Weak"] === "—" ? undefined : readLines(cellData["Weak"]),
+      resist: getElements(readLines(cellData["Resist"])),
+      weak: getElements(readLines(cellData["Weak"])),
     };
 
     const intro = page.getElementById("Introduction")!;
