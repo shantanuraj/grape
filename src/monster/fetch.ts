@@ -31,6 +31,7 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
   const page = dom.window.document;
 
   try {
+    const monsterName = page.getElementById("firstHeading")!.textContent!;
     const infoTable = page.querySelector<HTMLTableElement>("table.wikitable")!;
     const [_, imageRow, ...statsRows] = infoTable.rows;
 
@@ -70,7 +71,7 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
     const [kinsect, breakable, severable] = getMonsterPartData(page);
 
     const monster: Monster = {
-      name,
+      name: monsterName,
       image: imageRow.querySelector("img")!.src,
       description,
       hunterTips,
