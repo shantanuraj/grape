@@ -63,7 +63,7 @@ export const getTablesForId = (page: Document, id: string): TabTable[] => {
     const id = parseInt(el.getAttribute("data-tabpos")!);
     return {
       name: el.textContent!,
-      table: page.querySelector<HTMLTableElement>(
+      table: tabs?.querySelector<HTMLTableElement>(
         `.tabs-content-${id} table.wikitable`
       )!,
     };

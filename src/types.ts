@@ -63,6 +63,13 @@ export type Kinsect = {
   [key in KinsectExtract]: string[];
 };
 
+export type Quest = {
+  type: string;
+  level: number;
+  name: string;
+  locale: string;
+};
+
 export type Rank = "LR" | "MR" | "HR";
 
 export interface Material {
@@ -95,5 +102,6 @@ export interface Monster extends MonsterStats {
   breakable: string[];
   severable: string[];
   items: string[];
+  quests: Quest[];
   materials: MaterialsByRank;
 }

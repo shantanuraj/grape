@@ -82,6 +82,7 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
       breakable,
       severable,
       items: getEffectiveItems(page),
+      quests: getQuests(page),
       materials: getMaterials(page),
       ...stats,
     };
@@ -223,8 +224,51 @@ const getEffectiveItems = (page: Document): Monster["items"] => {
       if (effectiveness[i].includes("✔")) effectiveItems.push(item);
     });
   });
-  
+
   return effectiveItems;
+};
+
+const getQuests = (page: Document): Monster["quests"] => {
+  const tables = getTablesForId(page, "Relevant_quests");
+
+  const quests: Monster["quests"] = [];
+  tables.forEach((table) => {
+    const [header, ...rows] = table.table.rows;
+
+    const headerNames = Array.from(header.cells).map(toCamel);
+    const columnNames = [
+      "type",
+      ["level", "star"],
+      "questName",
+      "locale",
+      "isTarget",
+    ];
+
+    const columnLookup = Object.fromEntries(
+      columnNames.map((name) => [
+        typeof name === "string" ? name : name[0],
+        headerNames.indexOf(
+          typeof name === "string"
+            ? name
+            : name.filter((n) => headerNames.includes(n))[0]
+        ),
+      ])
+    );
+
+    rows.forEach((row) => {
+      const rowData = Array.from(row.cells).map(toCleanText);
+      if (rowData[columnLookup["isTarget"]].toLowerCase() === "yes") {
+        quests.push({
+          type: rowData[columnLookup["type"]],
+          level: parseInt(rowData[columnLookup["level"]]),
+          name: rowData[columnLookup["questName"]],
+          locale: rowData[columnLookup["locale"]],
+        });
+      }
+    });
+  });
+
+  return quests;
 };
 
 const getMaterials = (page: Document): Monster["materials"] => {
