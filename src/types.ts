@@ -94,5 +94,6 @@ export interface Monster extends MonsterStats {
   kinsect?: Kinsect;
   breakable: string[];
   severable: string[];
+  items: string[];
   materials: MaterialsByRank;
 }

@@ -81,6 +81,7 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
       kinsect,
       breakable,
       severable,
+      items: getEffectiveItems(page),
       materials: getMaterials(page),
       ...stats,
     };
@@ -206,6 +207,24 @@ const getMonsterPartData = (
   const severable = getTickedRows(partTable, "severable");
 
   return [kinsect, breakeable, severable];
+};
+
+const getEffectiveItems = (page: Document): Monster["items"] => {
+  const table = getTableForId(page, "Item_effectiveness");
+  if (!table) return [];
+
+  const effectiveItems: string[] = [];
+  const itemRows = chunk(Array.from(table.rows), 2);
+  itemRows.forEach((rows) => {
+    const items = Array.from(rows[0].cells).map(toCleanText);
+    const effectiveness = Array.from(rows[1].cells).map(toCamel);
+
+    items.forEach((item, i) => {
+      if (effectiveness[i].includes("✔")) effectiveItems.push(item);
+    });
+  });
+  
+  return effectiveItems;
 };
 
 const getMaterials = (page: Document): Monster["materials"] => {
