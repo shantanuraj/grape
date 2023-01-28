@@ -38,6 +38,18 @@ export type PhasedWeakness = {
   [phase in Phase]?: HitzoneWeakness;
 } & { "Normal phase": HitzoneWeakness };
 
+export type StatusEffect =
+  | "poison"
+  | "stun"
+  | "paralysis"
+  | "sleep"
+  | "blast"
+  | "exhaust"
+  | "fireblight"
+  | "waterblight"
+  | "thunderblight"
+  | "iceblight";
+
 export interface MonsterStats {
   type: string;
   class: string;
