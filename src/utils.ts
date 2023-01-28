@@ -3,9 +3,9 @@ import { camelCase } from "lodash";
 /**
  * Get an element's text content, with line breaks and extra whitespace removed.
  * @param el HTML element
- * @returns Cleaned text content from element
+ * @returns string with text content from the element, or empty string
  */
-export function cleanLines(el: HTMLElement): string {
+export function toCleanText(el: HTMLElement): string {
   const brs = Array.from(el.querySelectorAll("br"));
   brs.forEach((br) => br.replaceWith("\n"));
   return el.textContent?.trim() || "";
@@ -64,10 +64,35 @@ export const getTablesForId = (page: Document, id: string): TabTable[] => {
 };
 
 /**
- * Converts an element's text to camelCase
+ * Convert a string or element's text content to camelCase
  * @param el HTML element
  * @returns camelCase string
  */
-export function toCamel(el: HTMLElement): string {
-  return camelCase(el.textContent?.trim());
+export function toCamel(input: HTMLElement | string): string {
+  if (typeof input === "string") return camelCase(input.trim());
+  return camelCase(input.textContent?.trim());
+}
+
+/**
+ * Get a list of rows where the given column includes a tick (✔)
+ * @param table table element
+ * @param column name of column to check for ticks
+ * @returns array of strings (text content of column 1 for each matching row)
+ */
+export function getTickedRows(
+  table: HTMLTableElement,
+  column: string
+): string[] {
+  const [header, ...rows] = table.rows;
+  const headerNames = Array.from(header.cells).map(toCamel);
+
+  const columnIndex = headerNames.findIndex((i) => i === toCamel(column));
+  if (columnIndex === -1) return [];
+
+  const keys = Array.from(rows).map((row) => toCleanText(row.cells[0]));
+  const values = Array.from(rows).map((row) =>
+    toCleanText(row.cells[columnIndex])
+  );
+
+  return keys.filter((k, i) => values[i].includes("✔"));
 }

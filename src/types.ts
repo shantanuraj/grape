@@ -79,8 +79,8 @@ export interface Monster extends MonsterStats {
   hunterTips: string;
   habitats: Habitat[];
   weaknesses: PhasedWeakness;
-  kinsect: Kinsect;
-  breakeable: string[];
+  kinsect?: Kinsect;
+  breakable: string[];
   severable: string[];
   materials: MaterialsByRank;
 }

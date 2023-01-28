@@ -11,7 +11,13 @@ import {
   Rank,
 } from "@/types";
 import { getPage } from "@/wiki";
-import { cleanLines, getTableForId, getTablesForId, toCamel } from "@/utils";
+import {
+  toCleanText,
+  getTableForId,
+  getTablesForId,
+  getTickedRows,
+  toCamel,
+} from "@/utils";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
   const html = await getPage(name, "monster");
@@ -25,7 +31,7 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
 
     const cells = chunk(
       statsRows.flatMap((row) => {
-        return Array.from(row.cells).map(cleanLines);
+        return Array.from(row.cells).map(toCleanText);
       }),
       2
     );
@@ -47,6 +53,8 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
     const description = nodeContentsWithText(page, "Description", intro);
     const hunterTips = nodeContentsWithText(page, "Hunter tips", intro);
 
+    const [kinsect, breakable, severable] = getMonsterPartData(page);
+
     const monster: Monster = {
       name,
       image: imageRow.querySelector("img")!.src,
@@ -54,9 +62,9 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
       hunterTips,
       habitats: [],
       weaknesses: getWeaknesses(page),
-      kinsect: getKinsectData(page),
-      breakeable: [],
-      severable: [],
+      kinsect,
+      breakable,
+      severable,
       materials: getMaterials(page),
       ...stats,
     };
@@ -133,35 +141,41 @@ const getWeaknesses = (page: Document): Monster["weaknesses"] => {
   return weaknesses;
 };
 
-const getKinsectData = (page: Document): Monster["kinsect"] => {
+const getKinsectData = (table: HTMLTableElement): Monster["kinsect"] => {
+  const [header, ...rows] = table.rows;
+
+  const kinsectColumn = Array.from(header.cells)
+    .map(toCamel)
+    .findIndex((i) => i === "kinsectExtract");
+  if (kinsectColumn === -1) return;
+
   const kinsectData: Monster["kinsect"] = {
     white: [],
     orange: [],
     red: [],
   };
+  rows.forEach((row) => {
+    const part = toCleanText(row.cells[0]);
+    const extract = toCamel(row.cells[kinsectColumn]);
 
-  const partTable = getTableForId(page, "Monster_part_data");
-  if (!partTable) return kinsectData;
-
-  const [header, ...rows] = partTable.rows;
-
-  const kinsectColumn = Array.from(header.cells)
-    .map(toCamel)
-    .findIndex((i) => i === "kinsectExtract");
-
-  if (kinsectColumn > 0) {
-    rows.forEach((row) => {
-      const part = row.cells[0].textContent!.trim();
-      const extract = row.cells[kinsectColumn]
-        .textContent!.trim()
-        .toLowerCase();
-
-      if (["white", "orange", "red"].includes(extract))
-        kinsectData[extract as KinsectExtract].push(part);
-    });
-  }
+    if (["white", "orange", "red"].includes(extract))
+      kinsectData[extract as KinsectExtract].push(part);
+  });
 
   return kinsectData;
+};
+
+const getMonsterPartData = (
+  page: Document
+): [Monster["kinsect"], Monster["breakable"], Monster["severable"]] => {
+  const partTable = getTableForId(page, "Monster_part_data");
+  if (!partTable) return [undefined, [], []];
+
+  const kinsect = getKinsectData(partTable);
+  const breakeable = getTickedRows(partTable, "breakable");
+  const severable = getTickedRows(partTable, "severable");
+
+  return [kinsect, breakeable, severable];
 };
 
 const getMaterials = (page: Document): Monster["materials"] => {
