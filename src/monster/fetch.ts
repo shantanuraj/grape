@@ -22,6 +22,7 @@ import {
   getTickedRows,
   toCamel,
   getMatchingElements,
+  getElementAfterId,
 } from "@/utils";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
@@ -76,6 +77,7 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
       hunterTips,
       habitats: [],
       weaknesses: getWeaknesses(page),
+      ailments: getAilments(page),
       kinsect,
       breakable,
       severable,
@@ -153,6 +155,20 @@ const getWeaknesses = (page: Document): Monster["weaknesses"] => {
   ) as PhasedWeakness;
 
   return weaknesses;
+};
+
+const getAilments = (page: Document): Monster["ailments"] => {
+  const section = getElementAfterId(page, "Status_effectiveness");
+  const labels = Array.from(
+    section?.querySelectorAll("label[data-tabpos]") ?? []
+  ).map((el) => el.textContent?.toLowerCase().trim());
+
+  const ailmentData = labels.map((l) => [
+    l?.replace(/[^A-Za-z]/g, ""),
+    l?.replace(/[A-Za-z]/g, "").length,
+  ]);
+
+  return Object.fromEntries(ailmentData) as Monster["ailments"];
 };
 
 const getKinsectData = (table: HTMLTableElement): Monster["kinsect"] => {

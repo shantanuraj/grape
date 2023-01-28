@@ -1,5 +1,4 @@
 import { camelCase } from "lodash";
-import { Element, ELEMENTS } from "./types";
 
 /**
  * Get an element's text content, with line breaks and extra whitespace removed.
@@ -11,6 +10,18 @@ export function toCleanText(el: HTMLElement): string {
   brs.forEach((br) => br.replaceWith("\n"));
   return el.textContent?.trim() || "";
 }
+
+/**
+ * Get the element after a wiki section heading
+ * @param page document
+ * @param id section's id
+ * @returns HTML element
+ */
+export const getElementAfterId = (
+  page: Document,
+  id: string
+): HTMLElement | null | undefined =>
+  page.getElementById(id)?.parentElement?.nextElementSibling as HTMLElement;
 
 type TabTable = {
   name: string;
@@ -27,8 +38,7 @@ export const getTableForId = (
   page: Document,
   id: string
 ): HTMLTableElement | null | undefined => {
-  const nextElement =
-    page.getElementById(id)?.parentElement?.nextElementSibling;
+  const nextElement = getElementAfterId(page, id);
 
   if (nextElement?.className.includes("wikitable"))
     return <HTMLTableElement>nextElement;
@@ -43,11 +53,9 @@ export const getTableForId = (
  * @returns an array of TabTable objects (containing the tab name and table)
  */
 export const getTablesForId = (page: Document, id: string): TabTable[] => {
-  const tabs = page
-    .getElementById(id)
-    ?.parentElement?.nextElementSibling?.querySelector<HTMLElement>(
-      ".tabs.tabs-tabbox"
-    );
+  const tabs = getElementAfterId(page, id)?.querySelector<HTMLElement>(
+    ".tabs.tabs-tabbox"
+  );
 
   const labelEls = tabs?.querySelectorAll("label[data-tabpos]");
 

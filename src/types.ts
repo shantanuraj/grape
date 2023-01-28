@@ -88,6 +88,9 @@ export interface Monster extends MonsterStats {
   hunterTips: string;
   habitats: Habitat[];
   weaknesses: PhasedWeakness;
+  ailments: {
+    [k in StatusEffect]: number;
+  };
   kinsect?: Kinsect;
   breakable: string[];
   severable: string[];
