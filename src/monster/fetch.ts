@@ -2,60 +2,88 @@ import { JSDOM } from "jsdom";
 import { camelCase, chunk } from "lodash";
 
 import {
-  AttackType,
-  HitzoneWeakness,
+  Element,
+  ELEMENTS,
+  KinsectExtract,
   Material,
+  MaterialChance,
   MaterialsByRank,
   Monster,
-  MonsterPart,
   MonsterStats,
-  Rank,
-  Weakness,
+  PhasedWeakness,
+  StatusEffect,
+  STATUS_EFFECTS,
 } from "@/types";
 import { getPage } from "@/wiki";
+import {
+  toCleanText,
+  getTableForId,
+  getTablesForId,
+  getTickedRows,
+  toCamel,
+  getMatchingElements,
+  getElementAfterId,
+} from "@/utils";
 
 export async function getMonster(name: string): Promise<Monster | undefined> {
-  const html = await getPage("monster", name);
+  const html = await getPage(name, "monster");
   if (!html) return;
   const dom = new JSDOM(html);
   const page = dom.window.document;
 
   try {
+    const monsterName = page.getElementById("firstHeading")!.textContent!;
     const infoTable = page.querySelector<HTMLTableElement>("table.wikitable")!;
     const [_, imageRow, ...statsRows] = infoTable.rows;
 
     const cells = chunk(
       statsRows.flatMap((row) => {
-        return Array.from(row.cells).map((cell) => {
-          // Get line breaks out of the way
-          const brs = Array.from(cell.querySelectorAll("br"));
-          brs.forEach((br) => br.replaceWith("\n"));
-          return cell.textContent?.trim() || "";
-        });
+        return Array.from(row.cells).map(toCleanText);
       }),
       2
     );
 
-    const stats = Object.fromEntries(
-      cells.map(([key, value]) => {
-        const parsedKey = camelCase(key) as keyof MonsterStats;
-        const parsedValue = parsers[parsedKey](value);
-        return [parsedKey, parsedValue];
-      })
-    ) as unknown as MonsterStats;
+    const cellData = Object.fromEntries(cells);
+
+    const stats: MonsterStats = {
+      type: readLines(cellData["Type"])[0],
+      class: readLines(cellData["Type"])[1],
+      threatLv: parseInt(cellData["Threat lv"].split(" / ")[0]),
+      element: getMatchingElements<Element>(
+        ELEMENTS,
+        cellData["Element"] as string
+      ),
+      status: getMatchingElements<StatusEffect>(
+        STATUS_EFFECTS,
+        readLines(cellData["Status"])
+      ),
+      resist: getMatchingElements<Element>(
+        ELEMENTS,
+        readLines(cellData["Resist"])
+      ),
+      weak: getMatchingElements<Element>(ELEMENTS, readLines(cellData["Weak"])),
+    };
 
     const intro = page.getElementById("Introduction")!;
 
     const description = nodeContentsWithText(page, "Description", intro);
     const hunterTips = nodeContentsWithText(page, "Hunter tips", intro);
 
+    const [kinsect, breakable, severable] = getMonsterPartData(page);
+
     const monster: Monster = {
-      name,
+      name: monsterName,
       image: imageRow.querySelector("img")!.src,
       description,
       hunterTips,
       habitats: [],
       weaknesses: getWeaknesses(page),
+      ailments: getAilments(page),
+      kinsect,
+      breakable,
+      severable,
+      items: getEffectiveItems(page),
+      quests: getQuests(page),
       materials: getMaterials(page),
       ...stats,
     };
@@ -69,17 +97,6 @@ export async function getMonster(name: string): Promise<Monster | undefined> {
 
 const identity = <T>(x: T) => x;
 const readLines = (text: string) => text.split("\n").map((l) => l.trim());
-
-const parsers: {
-  [key in keyof Required<MonsterStats>]: (value: string) => MonsterStats[key];
-} = {
-  element: identity,
-  resist: readLines,
-  status: identity,
-  threatLv: (val) => parseInt(val.split(" / ")[0]),
-  type: readLines,
-  weak: (val) => (val === "—" ? undefined : val),
-};
 
 const FIRST_ORDERED_NODE_TYPE = 9;
 
@@ -102,82 +119,176 @@ const nodeContentsWithText = (
   );
 };
 
-const getTablesForHeading = (page: Document, heading: string) => {
-  return Array.from(
-    page
-      .getElementById(heading)
-      ?.parentElement?.nextElementSibling?.querySelectorAll<HTMLTableElement>(
-        ".tabs-container .tabs-content table"
-      ) || []
-  );
+const getWeaknesses = (page: Document): Monster["weaknesses"] => {
+  const weaknessTables = getTablesForId(page, "Weaknesses_by_hitzone");
+
+  const weaknesses = Object.fromEntries(
+    weaknessTables.map((table) => {
+      const [header, ...rows] = table.table.rows;
+      const elements = Array.from(header.cells).slice(1).map(toCamel);
+
+      const weaknessData = Object.fromEntries(
+        rows.map((row) => {
+          const [monsterPart, ...damageValues] = Array.from(row.cells);
+          const part = toCamel(monsterPart);
+          const weaknessesForPart = Object.fromEntries(
+            elements.map((element, i) => {
+              const weakness = parseInt(
+                damageValues[i].textContent?.trim() || "0"
+              );
+              return [element, weakness];
+            })
+          );
+          return [part, weaknessesForPart];
+        })
+      );
+
+      return [table.name, weaknessData];
+    })
+  ) as PhasedWeakness;
+
+  return weaknesses;
 };
 
-const getWeaknesses = (page: Document): Monster["weaknesses"] => {
-  const tables = getTablesForHeading(page, "Weaknesses_by_hitzone");
+const getAilments = (page: Document): Monster["ailments"] => {
+  const section = getElementAfterId(page, "Status_effectiveness");
+  const labels = Array.from(
+    section?.querySelectorAll("label[data-tabpos]") ?? []
+  ).map((el) => el.textContent?.toLowerCase().trim());
 
-  const result = tables.map((table) => {
-    const [header, ...rows] = table.rows;
-    const attackTypes = Array.from(header.cells)
-      .slice(1)
-      .map((cell) => {
-        const attackType = camelCase(cell.textContent?.trim()) as AttackType;
-        return attackType;
-      });
+  const ailmentData = labels.map((l) => [
+    l?.replace(/[^A-Za-z]/g, ""),
+    l?.replace(/[A-Za-z]/g, "").length,
+  ]);
 
-    return Object.fromEntries(
-      rows.map((row) => {
-        const [partName, ...weaknesses] = Array.from(row.cells);
-        const part = camelCase(partName.textContent?.trim()) as MonsterPart;
-        const weaknessesForPart = Object.fromEntries(
-          attackTypes.map((attackType, i) => {
-            const weakness = parseInt(weaknesses[i].textContent?.trim() || "0");
-            return [attackType, weakness];
-          })
-        ) as Weakness;
-        return [part, weaknessesForPart] as const;
-      })
-    ) as HitzoneWeakness;
+  return Object.fromEntries(ailmentData) as Monster["ailments"];
+};
+
+const getKinsectData = (table: HTMLTableElement): Monster["kinsect"] => {
+  const [header, ...rows] = table.rows;
+
+  const kinsectColumn = Array.from(header.cells)
+    .map(toCamel)
+    .findIndex((i) => i === "kinsectExtract");
+  if (kinsectColumn === -1) return;
+
+  const kinsectData: Monster["kinsect"] = {
+    white: [],
+    orange: [],
+    red: [],
+  };
+  rows.forEach((row) => {
+    const part = toCleanText(row.cells[0]);
+    const extract = toCamel(row.cells[kinsectColumn]);
+
+    if (["white", "orange", "red"].includes(extract))
+      kinsectData[extract as KinsectExtract].push(part);
   });
 
-  return result;
+  return kinsectData;
+};
+
+const getMonsterPartData = (
+  page: Document
+): [Monster["kinsect"], Monster["breakable"], Monster["severable"]] => {
+  const partTable = getTableForId(page, "Monster_part_data");
+  if (!partTable) return [undefined, [], []];
+
+  const kinsect = getKinsectData(partTable);
+  const breakeable = getTickedRows(partTable, "breakable");
+  const severable = getTickedRows(partTable, "severable");
+
+  return [kinsect, breakeable, severable];
+};
+
+const getEffectiveItems = (page: Document): Monster["items"] => {
+  const table = getTableForId(page, "Item_effectiveness");
+  if (!table) return [];
+
+  const effectiveItems: string[] = [];
+  const itemRows = chunk(Array.from(table.rows), 2);
+  itemRows.forEach((rows) => {
+    const items = Array.from(rows[0].cells).map(toCleanText);
+    const effectiveness = Array.from(rows[1].cells).map(toCamel);
+
+    items.forEach((item, i) => {
+      if (effectiveness[i].includes("✔")) effectiveItems.push(item);
+    });
+  });
+
+  return effectiveItems;
+};
+
+const getQuests = (page: Document): Monster["quests"] => {
+  const tables = getTablesForId(page, "Relevant_quests");
+
+  const quests: Monster["quests"] = [];
+  tables.forEach((table) => {
+    const [header, ...rows] = table.table.rows;
+
+    const headerNames = Array.from(header.cells).map(toCamel);
+    const columnNames = [
+      "type",
+      ["level", "star"],
+      "questName",
+      "locale",
+      "isTarget",
+    ];
+
+    const columnLookup = Object.fromEntries(
+      columnNames.map((name) => [
+        typeof name === "string" ? name : name[0],
+        headerNames.indexOf(
+          typeof name === "string"
+            ? name
+            : name.filter((n) => headerNames.includes(n))[0]
+        ),
+      ])
+    );
+
+    rows.forEach((row) => {
+      const rowData = Array.from(row.cells).map(toCleanText);
+      if (rowData[columnLookup["isTarget"]].toLowerCase() === "yes") {
+        quests.push({
+          type: rowData[columnLookup["type"]],
+          level: parseInt(rowData[columnLookup["level"]]),
+          name: rowData[columnLookup["questName"]],
+          locale: rowData[columnLookup["locale"]],
+        });
+      }
+    });
+  });
+
+  return quests;
 };
 
 const getMaterials = (page: Document): Monster["materials"] => {
-  const tables = getTablesForHeading(page, "Monster_materials");
-  const ranks = Array.from(
-    tables[0].closest("div.tabs")?.querySelectorAll("label") || []
-  )
-    .map((l) => l.textContent?.slice(0, 2))
-    .filter((r): r is Rank => !!r);
+  const tables = getTablesForId(page, "Monster_materials");
 
   const result = Object.fromEntries(
-    ranks.map((rank, i) => {
-      const table = tables[i];
+    tables.map((table) => {
+      const materialTable = table.table;
+      const rank = table.name.slice(0, 2);
 
-      const [header, ...rows] = table.rows;
-      const materialFields = Array.from(header.cells)
+      const [header, ...rows] = materialTable.rows;
+      const materialColumns = Array.from(header.cells)
         .slice(1)
-        .map((cell) => {
-          const field = camelCase(cell.textContent?.trim()) as keyof Material;
-          return field;
-        });
+        .map(toCamel) as (keyof Material)[];
 
       const materials = rows.map((row) => {
         const [materialEmblem, ...materialValues] = Array.from(row.cells);
 
-        return Object.fromEntries([
+        const materialData = [
           ["emblem", materialEmblem.querySelector("img")?.src || ""],
-          ...materialFields.map((field, i) => {
-            const cell = materialValues[i];
-            // Get line breaks out of the way
-            const brs = Array.from(cell.querySelectorAll("br"));
-            brs.forEach((br) => br.replaceWith("\n"));
-            const value = materialParsers[field](
-              cell.textContent?.trim() || ""
-            );
-            return [field, value] as const;
+          ...materialColumns.map((column, i) => {
+            const cell = toCleanText(materialValues[i]);
+            if (!cell) return undefined;
+            const value = materialParsers[column](cell);
+            return [column, value];
           }),
-        ]) as unknown as Material;
+        ].filter(Boolean) as [string, any][];
+
+        return Object.fromEntries(materialData) as Material;
       });
 
       return [rank, materials] as const;
@@ -187,18 +298,36 @@ const getMaterials = (page: Document): Monster["materials"] => {
   return result;
 };
 
-const readPercentage = (text: string) => parseInt(text.replace("%", ""));
+/**
+ * Get the amount of times a material can be obtained if the text includes x[number], e.g. x2, x3
+ * @param text string to check
+ * @returns number or undefined
+ */
+const getMaterialAmount = (text: string): number | undefined => {
+  const matches = text.match(/.*x(\d).*/);
+
+  if (!matches) return;
+  return parseInt(matches[1]);
+};
+
+const readPercentage = (text: string) => {
+  const amount = getMaterialAmount(text);
+  return { percentage: parseInt(text.replace("%", "")), amount };
+};
 
 const readScopedPercentage = <T extends string>(
   text: string
-): Record<T, { amount: number }> | undefined => {
+): Record<T, MaterialChance> | undefined => {
   if (!text) return undefined;
   return Object.fromEntries(
     text.split("\n").map((l) => {
       const [chance, scope = ""] = l.split("%");
-      return [camelCase(scope.slice(1, -1)) as T, { amount: parseInt(chance) }];
+      return [
+        camelCase(scope.slice(1, -1)) as T,
+        { percentage: parseInt(chance) },
+      ];
     })
-  ) as Record<T, { amount: number }>;
+  ) as Record<T, { percentage: number }>;
 };
 
 const materialParsers: {
