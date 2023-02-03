@@ -1,20 +1,26 @@
-import { JSDOM } from "jsdom";
+import { getIdFromLink } from "@/utils";
 import { getPage } from "@/wiki";
 
-export async function getMonsterList(): Promise<string[] | undefined> {
-  const html = await getPage("Monster");
-  if (!html) return;
-  const dom = new JSDOM(html);
-  const page = dom.window.document;
+export async function getMonsterList(): Promise<number[]> {
+  const page = await getPage(315348);
+  if (!page) return [];
 
-  try {
-    const monsterLinks = page.querySelectorAll<HTMLAnchorElement>(
-      "a[title^='Monster']"
+  const monsterHeadingIds = ["hm_1", "hm_2", "hm_3", "hm_4"];
+  const monsters: number[] = [];
+
+  monsterHeadingIds.forEach((id) => {
+    const table = page.querySelector(`#${id} ~ table`);
+    if (!table)
+      throw Error(`Could not find a table for the section with id ${id}`);
+
+    const monsterLinks = Array.from(
+      table.querySelectorAll<HTMLAnchorElement>("td a")
     );
+    monsterLinks.forEach((l) => {
+      const id = getIdFromLink(l.href);
+      if (id) monsters.push(id);
+    });
+  });
 
-    return Array.from(monsterLinks).map((l) => l.textContent as string);
-  } catch (err) {
-    console.error(err);
-    return;
-  }
+  return monsters;
 }

@@ -1,4 +1,12 @@
 import { camelCase } from "lodash";
+import { BASE_URL } from "./wiki";
+
+export const getIdFromLink = (link: string) => {
+  const regex = new RegExp(`${BASE_URL}(\\d+)`);
+  const match = link.match(regex);
+
+  return match ? parseInt(match[1]) : null;
+};
 
 /**
  * Get an element's text content, with line breaks and extra whitespace removed.
