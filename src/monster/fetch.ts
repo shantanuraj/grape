@@ -4,7 +4,7 @@ import { AbnormalStatus, ABNORMAL_STATUSES, Element, ELEMENTS } from "@/types";
 import { getPage } from "@/wiki";
 import {
   toCleanText,
-  getMatchingElements,
+  getMatchingItems,
   readLines,
   getHorizontalData,
 } from "@/utils";
@@ -34,19 +34,19 @@ export async function getMonster(id: number): Promise<Monster | undefined> {
     description: cellData["Characteristics"],
     class: cellData["Type"],
     threatLevel: parseInt(cellData["Threat Level"].split(" / ")[0]),
-    majorWeakness: getMatchingElements<Element>(
+    majorWeakness: getMatchingItems<Element>(
       ELEMENTS,
       readLines(cellData["Major Weakness"])
     ),
-    otherWeakness: getMatchingElements<Element>(
+    otherWeakness: getMatchingItems<Element>(
       ELEMENTS,
       readLines(cellData["Other Weakness"])
     ),
-    element: getMatchingElements<Element>(
+    element: getMatchingItems<Element>(
       ELEMENTS,
       readLines(cellData["Blight / Elemental Damage"])
     ),
-    abnormalStatus: getMatchingElements<AbnormalStatus>(
+    abnormalStatus: getMatchingItems<AbnormalStatus>(
       ABNORMAL_STATUSES,
       readLines(cellData["Abnormal Status"])
     ),

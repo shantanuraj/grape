@@ -181,11 +181,11 @@ export const getTickedRows = (
  * @param input item or array of items to check
  * @returns a string or array of strings matching the reference array's type
  */
-type GetMatchingElementsType = {
+type GetMatchingItemsType = {
   <T>(reference: readonly T[], input: string): T | undefined;
   <T>(reference: readonly T[], input: string[]): T[];
 };
-export const getMatchingElements: GetMatchingElementsType = <T extends string>(
+export const getMatchingItems: GetMatchingItemsType = <T extends string>(
   reference: readonly T[],
   input: string | string[]
 ) => {
