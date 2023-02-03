@@ -1,12 +1,25 @@
 import { camelCase } from "lodash";
 import { BASE_URL } from "./wiki";
 
+/**
+ * Given a game8 wiki link, return the id
+ * @param link string
+ * @returns id number
+ */
 export const getIdFromLink = (link: string) => {
   const regex = new RegExp(`${BASE_URL}(\\d+)`);
   const match = link.match(regex);
 
   return match ? parseInt(match[1]) : null;
 };
+
+/**
+ * Split lines of text in a single string into an array of lines
+ * @param text string with line breaks
+ * @returns text array
+ */
+export const readLines = (text: string) =>
+  text.split("\n").map((l) => l.trim());
 
 /**
  * Get an element's text content, with line breaks and extra whitespace removed.
@@ -17,6 +30,49 @@ export const toCleanText = (el: HTMLElement): string => {
   const brs = Array.from(el.querySelectorAll("br"));
   brs.forEach((br) => br.replaceWith("\n"));
   return el.textContent?.trim() || "";
+};
+
+/**
+ * Turn a horizontal table (heading row, data row, heading row, data row...) into a
+ * data object.
+ * @param table Horizontal table to be converted
+ * @returns object with heading text as keys, and cell text as values
+ */
+export const getHorizontalData = (
+  table: HTMLTableElement
+): Record<string, string> => {
+  const headings: string[] = [...table.rows].reduce(
+    (acc, row, i) => {
+      console.log([...row.cells].map((c) => toCleanText(c)));
+
+      // i % 0 ? [...acc] : [...acc, ...row.cells.map((c) => toCleanText(c))];
+
+      return [...acc];
+    },
+
+    []
+  );
+
+  // const headings: string[] = [];
+  // const data: string[] = [];
+
+  // [...table.rows].forEach((row, i) => {
+  //   console.log(row.cells[0].textContent!, i);
+  //   if (i % 0) {
+  //     console.log("data");
+  //     data.concat([...row.cells].map((c) => toCleanText(c)));
+  //     return;
+  //   }
+  //   console.log("heading");
+  //   headings.concat([...row.cells].map((c) => toCleanText(c)));
+  // });
+  // console.log(headings, data);
+
+  // return headings.reduce(
+  //   (acc, heading, i) => ({ ...acc, [heading]: data[i] }),
+  //   {}
+  // );
+  return { a: "b" };
 };
 
 /**
