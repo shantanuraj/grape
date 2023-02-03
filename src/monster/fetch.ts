@@ -6,19 +6,42 @@ import {
   toCleanText,
   getMatchingItems,
   readLines,
-  getHorizontalData,
+  getAllDataTables,
+  getSection,
 } from "@/utils";
-import { Monster, MonsterInfo } from "./types";
+import { Monster, MonsterInfo, PageSection } from "./types";
+
+const sectionLookup: { text: string; section: PageSection }[] = [
+  {
+    text: "weakness and notes",
+    section: "info",
+  },
+  {
+    text: "weapon damage breakdown",
+    section: "weaponWeakness",
+  },
+  {
+    text: "elemental weakness breakdown",
+    section: "elementWeakness",
+  },
+];
 
 export async function getMonster(id: number): Promise<Monster | undefined> {
   const page = await getPage(id);
   if (!page) return;
 
+  const allTables = getAllDataTables(page);
+
+  const data: Partial<Record<PageSection, HTMLElement>> = {};
+  allTables.forEach(([heading, table]) => {
+    const section = getSection(sectionLookup, heading);
+    if (section) data[section] = table;
+  });
+
   /**
    * Read info from the info box table
    */
-  const infoTable = page.querySelector<HTMLTableElement>("#hl_1 ~ table")!;
-  const [nameRow, _, ...statsRows] = infoTable.rows;
+  const [nameRow, _, ...statsRows] = (data.info as HTMLTableElement).rows;
 
   const infoCells = chunk(
     statsRows.flatMap((row) => {
@@ -53,12 +76,10 @@ export async function getMonster(id: number): Promise<Monster | undefined> {
   };
 
   /**
-   * Read info from the "Weakness and Resistance" section
+   * Read info from the weakness breakdowns
    */
-  const weaknessSummaryTable =
-    page.querySelector<HTMLTableElement>("#hm_2 ~ table")!;
-  const weaknessSummaryData = getHorizontalData(weaknessSummaryTable);
-  console.log(weaknessSummaryData);
+  const weaknessToAttack = data.weaponWeakness as HTMLTableElement;
+  const weaknessToElement = data.elementWeakness as HTMLTableElement;
 
   const monster: Monster = {
     ...info,

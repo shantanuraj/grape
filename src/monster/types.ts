@@ -1,5 +1,7 @@
 import { AbnormalStatus, AttackType, Element, Rank } from "@/types";
 
+export type PageSection = "info" | "weaponWeakness" | "elementWeakness";
+
 export type Monster = MonsterInfo & {
   //   ailments: {
   //     [k in StatusEffect]: number;
@@ -23,14 +25,12 @@ export type MonsterInfo = {
   abnormalStatus: AbnormalStatus[];
 };
 
+// weakness breakdown - { head: { "sever": 45, blunt: "60" ... } }
 export type MonsterWeakness = {
-  // weakness summary table - { "sever": 38, "blunt": 41 ... }
-  weaknessSummary: Weakness;
-  // weakness breakdown - { head: { "sever": 45, blunt: "60" ... } }
   weaknessBreakdown: Record<string, Weakness>;
 };
 
-type Weakness = Record<AttackType, number>
+type Weakness = Record<AttackType, number>;
 
 export type MaterialChance = {
   amount?: number;

@@ -5,7 +5,7 @@ export const BASE_URL = "https://game8.co/games/Monster-Hunter-Rise/archives/";
 
 const getURL = (id: number) => BASE_URL + id;
 
-export const getPage = async (id: number): Promise<Element | null> => {
+export const getPage = async (id: number): Promise<HTMLElement | null> => {
   const html = await fetch(getURL(id))
     .then((res) => res.text())
     .catch((err) => {
@@ -14,5 +14,7 @@ export const getPage = async (id: number): Promise<Element | null> => {
   if (!html) return null;
 
   const dom = new JSDOM(html);
-  return dom.window.document.querySelector(".archive-style-wrapper");
+  return dom.window.document.querySelector(
+    ".archive-style-wrapper"
+  ) as HTMLElement;
 };

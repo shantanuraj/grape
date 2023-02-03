@@ -137,6 +137,48 @@ export const getTablesForId = (page: Document, id: string): TabTable[] => {
 };
 
 /**
+ * Get all headings that are followed by a table or tab table.
+ * @param page The parent element to scan for data in
+ * @returns array of headings and their associated table
+ */
+export const getAllDataTables = (
+  page: HTMLElement
+): [string, HTMLElement][] => {
+  const allData: [string, HTMLElement][] = [];
+  page
+    .querySelectorAll<HTMLHeadingElement>("h1, h2, h3, h4, h5, h6")
+    .forEach((heading) => {
+      const nextElement = heading.nextElementSibling as HTMLElement;
+      if (!nextElement) return;
+
+      if (
+        nextElement.tagName === "TABLE" ||
+        (nextElement.tagName === "DIV" &&
+          nextElement.className.includes("a-tabContainer"))
+      )
+        allData.push([toCleanText(heading), nextElement]);
+    });
+
+  return allData;
+};
+
+/**
+ * Get the data "section" a heading belongs to, based on the lookup array
+ * @param sectionLookup An array of sections and the heading text for that section
+ * @param heading The heading to look up
+ * @returns the section or undefined
+ */
+export const getSection = <T>(
+  sectionLookup: { text: string; section: T }[],
+  heading: string
+): T | undefined => {
+  const lookup = sectionLookup.find((i) =>
+    heading.toLowerCase().includes(i.text)
+  );
+  return lookup ? lookup.section : undefined;
+};
+
+/**
  * Convert a string or element's text content to camelCase
  * @param el HTML element
  * @returns camelCase string
