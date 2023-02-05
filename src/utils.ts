@@ -33,6 +33,65 @@ export const toCleanText = (el: HTMLElement): string => {
 };
 
 /**
+ * Get the text content each column of a table as an array.
+ * Takes an optional function for extracting header and table data, otherwise returns text content.
+ * @param table Table
+ * @param keyParseFn Function for parsing the header (first row) and key (first column)
+ * @param dataParseFn Function for parsing data
+ * @returns Table keys and columns
+ */
+export const getTableColumns = <T>(
+  table: HTMLTableElement,
+  keyParseFn?: (c: HTMLTableCellElement) => string,
+  dataParseFn?: (c: HTMLTableCellElement) => T
+): {
+  key: { header: string; data: string[] };
+  columns: { header: string; data: T[] }[];
+} => {
+  const parseKey = keyParseFn
+    ? keyParseFn
+    : (c: HTMLTableCellElement) => c.textContent ?? "";
+  const parseData = dataParseFn
+    ? dataParseFn
+    : (c: HTMLTableCellElement) => c.textContent ?? "";
+
+  const [header, ...rows] = table.rows;
+
+  const key = {
+    header: parseKey(header.cells[0]),
+    data: [] as string[],
+  };
+
+  const columns = [...header.cells].slice(1).map((c) => ({
+    header: parseKey(c),
+    data: [] as T[],
+  }));
+
+  rows.forEach((row) => {
+    [...row.cells].forEach((cell, i) => {
+      if (i === 0) {
+        key.data.push(parseKey(cell));
+        return;
+      }
+      columns[i - 1].data.push(parseData(cell) as T);
+    });
+  });
+
+  return { key, columns };
+};
+
+/**
+ * Get the index of a column in an array produced by the getTableColumns function above
+ * @param array Array of table columns
+ * @param header Header text to search for
+ * @returns Index or -1
+ */
+export const getColumnIndex = (
+  array: { columns: { header: string }[] },
+  header: string
+): number => array.columns.findIndex((column) => column.header === header);
+
+/**
  * Turn a horizontal table (heading row, data row, heading row, data row...) into a
  * data object.
  * @param table Horizontal table to be converted
@@ -43,8 +102,8 @@ export const getHorizontalData = (
 ): Record<string, string> => {
   const headings: string[] = [...table.rows].reduce(
     (acc, row, i) => {
+      // WIP
       console.log([...row.cells].map((c) => toCleanText(c)));
-
       // i % 0 ? [...acc] : [...acc, ...row.cells.map((c) => toCleanText(c))];
 
       return [...acc];

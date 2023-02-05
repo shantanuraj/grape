@@ -1,6 +1,12 @@
 import { camelCase, chunk } from "lodash";
 
-import { AbnormalStatus, ABNORMAL_STATUSES, Element, ELEMENTS } from "@/types";
+import {
+  AbnormalStatus,
+  ABNORMAL_STATUSES,
+  AttackType,
+  Element,
+  ELEMENTS,
+} from "@/types";
 import { getPage } from "@/wiki";
 import {
   toCleanText,
@@ -8,8 +14,11 @@ import {
   readLines,
   getAllDataTables,
   getSection,
+  getTableColumns,
+  toCamel,
+  getColumnIndex,
 } from "@/utils";
-import { Monster, MonsterInfo, PageSection } from "./types";
+import { Monster, MonsterInfo, PageSection, Weakness } from "./types";
 
 const sectionLookup: { text: string; section: PageSection }[] = [
   {
@@ -81,15 +90,13 @@ export async function getMonster(id: number): Promise<Monster | undefined> {
   const weaknessToAttack = data.weaponWeakness as HTMLTableElement;
   const weaknessToElement = data.elementWeakness as HTMLTableElement;
 
+  getWeaknesses([weaknessToAttack, weaknessToElement]);
+
   const monster: Monster = {
     ...info,
+    weaknessBreakdown: {},
   };
   // console.log(monster);
-
-  // const intro = page.getElementById("Introduction")!;
-
-  // const description = nodeContentsWithText(page, "Description", intro);
-  // const hunterTips = nodeContentsWithText(page, "Hunter tips", intro);
 
   // const [kinsect, breakable, severable] = getMonsterPartData(page);
 
@@ -115,71 +122,93 @@ export async function getMonster(id: number): Promise<Monster | undefined> {
 
 const identity = <T>(x: T) => x;
 
-const FIRST_ORDERED_NODE_TYPE = 9;
+const getWeaknesses = (
+  tables: [HTMLTableElement, HTMLTableElement]
+): Monster["weaknessBreakdown"] => {
+  const [weaponData, elementData] = tables.map((table) =>
+    getTableColumns<number>(
+      table,
+      (headerCell) => {
+        if (headerCell.textContent) return toCamel(headerCell.textContent);
 
-const nodeContentsWithText = (
-  page: Document,
-  text: string,
-  root: HTMLElement
-) => {
-  return (
-    page
-      .evaluate(
-        `//b[contains(text(),'${text}: ')]`,
-        root,
-        null,
-        FIRST_ORDERED_NODE_TYPE,
-        null
-      )
-      ?.singleNodeValue?.parentElement?.textContent?.replace(`${text}: `, "")
-      .trim() || ""
+        const images = headerCell.getElementsByTagName("img");
+        if (images.length) return toCamel(images[0].alt.split(" ")[0]);
+
+        return "No header text";
+      },
+      (cell) => {
+        const text = cell.textContent ?? "";
+        return text.match(/^\d+$/) ? parseInt(text) : 0;
+      }
+    )
   );
+
+  // build the column lookup table in a ts friendly way
+  const columnLookup: Record<AttackType, number> = {
+    sever: getColumnIndex(weaponData, "sever"),
+    blunt: getColumnIndex(weaponData, "blunt"),
+    ammo: getColumnIndex(weaponData, "ammo"),
+    fire: getColumnIndex(elementData, "fire"),
+    water: getColumnIndex(elementData, "water"),
+    thunder: getColumnIndex(elementData, "thunder"),
+    ice: getColumnIndex(elementData, "ice"),
+    dragon: getColumnIndex(elementData, "dragon"),
+  };
+
+  console.log(columnLookup);
+
+  console.log(weaponData.key);
+  console.log(weaponData.columns);
+
+  // const weaponWeaknessData: [string, Record<AttackType, number>][] =
+  //   weaponData[0].data.map((part, i) => [
+  //     part as string,
+  //     {
+  //       sever: weaponData[columnLookup.sever].data[i] as number,
+  //       blunt: weaponData[columnLookup.blunt].data[i] as number,
+  //       ammo: weaponData[columnLookup.ammo].data[i] as number,
+  //       fire: elementData[columnLookup.fire].data[i] as number,
+  //       water: elementData[columnLookup.water].data[i] as number,
+  //       thunder: elementData[columnLookup.thunder].data[i] as number,
+  //       ice: elementData[columnLookup.ice].data[i] as number,
+  //       dragon: elementData[columnLookup.dragon].data[i] as number,
+  //     },
+  //   ]);
+
+  // console.log(weaponWeaknessData);
+
+  // const weaknesses = Object.fromEntries(
+  //   [tables].flat().map((table) => {
+  //     const [header, ...rows] = table.rows;
+  //     const elements = Array.from(header.cells).slice(1).map(toCamel);
+
+  //     console.log(elements);
+
+  //     const weaknessData = Object.fromEntries(
+  //       rows.map((row) => {
+  //         const [monsterPart, ...damageValues] = Array.from(row.cells);
+  //         const part = toCamel(monsterPart);
+  //         const weaknessesForPart = Object.fromEntries(
+  //           elements.map((element, i) => {
+  //             const weakness = parseInt(
+  //               damageValues[i].textContent?.trim() || "0"
+  //             );
+  //             return [element, weakness];
+  //           })
+  //         );
+  //         return [part, weaknessesForPart];
+  //       })
+  //     );
+
+  //     console.log("weaknessData");
+  //     console.log(weaknessData);
+
+  //     return ["aaa", weaknessData];
+  //   })
+  // );
+
+  return {};
 };
-
-// const getWeaknesses = (page: Document): Monster["weaknesses"] => {
-//   const weaknessTables = getTablesForId(page, "Weaknesses_by_hitzone");
-
-//   const weaknesses = Object.fromEntries(
-//     weaknessTables.map((table) => {
-//       const [header, ...rows] = table.table.rows;
-//       const elements = Array.from(header.cells).slice(1).map(toCamel);
-
-//       const weaknessData = Object.fromEntries(
-//         rows.map((row) => {
-//           const [monsterPart, ...damageValues] = Array.from(row.cells);
-//           const part = toCamel(monsterPart);
-//           const weaknessesForPart = Object.fromEntries(
-//             elements.map((element, i) => {
-//               const weakness = parseInt(
-//                 damageValues[i].textContent?.trim() || "0"
-//               );
-//               return [element, weakness];
-//             })
-//           );
-//           return [part, weaknessesForPart];
-//         })
-//       );
-
-//       return [table.name, weaknessData];
-//     })
-//   ) as PhasedWeakness;
-
-//   return weaknesses;
-// };
-
-// const getAilments = (page: Document): Monster["ailments"] => {
-//   const section = getElementAfterId(page, "Status_effectiveness");
-//   const labels = Array.from(
-//     section?.querySelectorAll("label[data-tabpos]") ?? []
-//   ).map((el) => el.textContent?.toLowerCase().trim());
-
-//   const ailmentData = labels.map((l) => [
-//     l?.replace(/[^A-Za-z]/g, ""),
-//     l?.replace(/[A-Za-z]/g, "").length,
-//   ]);
-
-//   return Object.fromEntries(ailmentData) as Monster["ailments"];
-// };
 
 // const getKinsectData = (table: HTMLTableElement): Monster["kinsect"] => {
 //   const [header, ...rows] = table.rows;
