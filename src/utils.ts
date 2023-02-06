@@ -33,20 +33,18 @@ export const toCleanText = (el: HTMLElement): string => {
 };
 
 /**
- * Get the text content each column of a table as an array.
- * Takes an optional function for extracting header and table data, otherwise returns text content.
- * @param table Table
- * @param keyParseFn Function for parsing the header (first row) and key (first column)
- * @param dataParseFn Function for parsing data
- * @returns Table keys and columns
+ * Get table data as an object { row1: { column1: cellData, column2: cellData } }
+ * @param table 
+ * @param keyParseFn 
+ * @param dataParseFn 
+ * @returns 
  */
-export const getTableColumns = <T>(
+export const getTableRows = <T>(
   table: HTMLTableElement,
   keyParseFn?: (c: HTMLTableCellElement) => string,
   dataParseFn?: (c: HTMLTableCellElement) => T
 ): {
-  key: { header: string; data: string[] };
-  columns: { header: string; data: T[] }[];
+  [row: string]: { [column: string]: T };
 } => {
   const parseKey = keyParseFn
     ? keyParseFn
@@ -57,39 +55,22 @@ export const getTableColumns = <T>(
 
   const [header, ...rows] = table.rows;
 
-  const key = {
-    header: parseKey(header.cells[0]),
-    data: [] as string[],
-  };
+  const columns = [...header.cells].slice(1).map(parseKey);
 
-  const columns = [...header.cells].slice(1).map((c) => ({
-    header: parseKey(c),
-    data: [] as T[],
-  }));
-
-  rows.forEach((row) => {
-    [...row.cells].forEach((cell, i) => {
-      if (i === 0) {
-        key.data.push(parseKey(cell));
-        return;
-      }
-      columns[i - 1].data.push(parseData(cell) as T);
-    });
+  const data = rows.map((row) => {
+    const rowKey = parseKey(row.cells[0]);
+    const rowData = [...row.cells].slice(1).reduce(
+      (acc, curr, i) => ({
+        ...acc,
+        [columns[i]]: parseData(curr),
+      }),
+      {}
+    );
+    return [rowKey, rowData];
   });
 
-  return { key, columns };
+  return Object.fromEntries(data);
 };
-
-/**
- * Get the index of a column in an array produced by the getTableColumns function above
- * @param array Array of table columns
- * @param header Header text to search for
- * @returns Index or -1
- */
-export const getColumnIndex = (
-  array: { columns: { header: string }[] },
-  header: string
-): number => array.columns.findIndex((column) => column.header === header);
 
 /**
  * Turn a horizontal table (heading row, data row, heading row, data row...) into a

@@ -5,7 +5,7 @@ export type EntityType = "monster" | "armor";
 export const ELEMENTS = ["fire", "water", "ice", "thunder", "dragon"] as const;
 export type Element = typeof ELEMENTS[number];
 
-const WEAPON_DAMAGE_TYPES = ["sever", "blunt", "ammo"] as const;
+export const WEAPON_DAMAGE_TYPES = ["sever", "blunt", "ammo"] as const;
 export type WeaponDamageType = typeof WEAPON_DAMAGE_TYPES[number];
 
 export type AttackType = Element | WeaponDamageType;
