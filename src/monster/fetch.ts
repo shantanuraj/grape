@@ -5,6 +5,8 @@ import {
   ABNORMAL_STATUSES,
   Element,
   ELEMENTS,
+  KinsectExtract,
+  KINSECT_EXTRACTS,
   MONSTER_ABNORMAL_STATUSES,
   MONSTER_ELEMENTAL_BLIGHTS,
   WEAPON_DAMAGE_TYPES,
@@ -40,6 +42,10 @@ const sectionLookup: { text: string; section: PageSection }[] = [
     text: "status effect",
     section: "statusEffects",
   },
+  {
+    text: "kinsect",
+    section: "kinsectExtracts",
+  },
 ];
 
 export async function getMonster(id: number): Promise<Monster | undefined> {
@@ -54,9 +60,7 @@ export async function getMonster(id: number): Promise<Monster | undefined> {
     if (section) data[section] = table;
   });
 
-  /**
-   * Read info from the info box
-   */
+  /** Read monster info box */
   if (!isHTMLTable(data.info))
     throw Error("Could not find basic monster info table");
 
@@ -94,9 +98,7 @@ export async function getMonster(id: number): Promise<Monster | undefined> {
     ),
   };
 
-  /**
-   * Read info from the weakness breakdowns
-   */
+  /** Read weakness breakdown tables */
   if (!isHTMLTable(data.weaponWeakness) || !isHTMLTable(data.elementWeakness))
     throw Error("Could not find monster weakness tables");
 
@@ -105,40 +107,26 @@ export async function getMonster(id: number): Promise<Monster | undefined> {
     data.elementWeakness,
   ]);
 
-  /**
-   * Read status effects table
-   */
+  /** Read status effects table */
   if (!isHTMLTable(data.statusEffects))
     throw Error("Could not find status effects table");
 
   const statusEffects = getStatusEffects(data.statusEffects);
 
+  /** Read kinsect extracts */
+  if (!isHTMLTable(data.kinsectExtracts))
+    throw Error("Could not find kinsect extracts table");
+
+  const kinsectExtracts = getKinsectExtracts(data.kinsectExtracts);
+
   const monster: Monster = {
     ...info,
     weaknessBreakdown,
     statusEffects,
+    kinsectExtracts,
   };
 
   console.log(monster);
-
-  // const [kinsect, breakable, severable] = getMonsterPartData(page);
-
-  // const monster: Monster = {
-  //   name: monsterName,
-  //   image: imageRow.querySelector("img")!.src,
-  //   description,
-  //   hunterTips,
-  //   habitats: [],
-  //   weaknesses: getWeaknesses(page),
-  //   ailments: getAilments(page),
-  //   kinsect,
-  //   breakable,
-  //   severable,
-  //   items: getEffectiveItems(page),
-  //   quests: getQuests(page),
-  //   materials: getMaterials(page),
-  //   ...stats,
-  // };
 
   return monster;
 }
@@ -230,29 +218,32 @@ const isStatusEffects = (
   return true;
 };
 
-// const getKinsectData = (table: HTMLTableElement): Monster["kinsect"] => {
-//   const [header, ...rows] = table.rows;
+const getKinsectExtracts = (
+  table: HTMLTableElement
+): Monster["kinsectExtracts"] => {
+  const [_, ...rows] = table.rows;
 
-//   const kinsectColumn = Array.from(header.cells)
-//     .map(toCamel)
-//     .findIndex((i) => i === "kinsectExtract");
-//   if (kinsectColumn === -1) return;
+  const data: Monster["kinsectExtracts"] = {
+    white: [],
+    orange: [],
+    red: [],
+  };
 
-//   const kinsectData: Monster["kinsect"] = {
-//     white: [],
-//     orange: [],
-//     red: [],
-//   };
-//   rows.forEach((row) => {
-//     const part = toCleanText(row.cells[0]);
-//     const extract = toCamel(row.cells[kinsectColumn]);
+  rows.forEach((row) => {
+    const part = toCleanText(row.cells[0]);
 
-//     if (["white", "orange", "red"].includes(extract))
-//       kinsectData[extract as KinsectExtract].push(part);
-//   });
+    const images = row.cells[1].getElementsByTagName("img");
+    if (!images.length) return;
+    const extract = toCamel(images[0].alt.split(" ")[0]);
 
-//   return kinsectData;
-// };
+    if (isExtract(extract)) data[extract].push(part);
+  });
+
+  return data;
+};
+
+const isExtract = (colour: string): colour is KinsectExtract =>
+  KINSECT_EXTRACTS.includes(colour);
 
 // const getMonsterPartData = (
 //   page: Document

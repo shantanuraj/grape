@@ -48,7 +48,8 @@ export type AbnormalStatus = typeof ABNORMAL_STATUSES[number];
 
 export type StatusEffect = ElementalBlight | AbnormalStatus;
 
-export type KinsectExtract = "white" | "orange" | "red";
+export const KINSECT_EXTRACTS = ["red", "white", "orange"];
+export type KinsectExtract = typeof KINSECT_EXTRACTS[number];
 
 export type Quest = {
   type: string;

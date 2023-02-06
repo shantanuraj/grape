@@ -2,6 +2,7 @@ import {
   AbnormalStatus,
   AttackType,
   Element,
+  KinsectExtract,
   MONSTER_ABNORMAL_STATUSES,
   MONSTER_ELEMENTAL_BLIGHTS,
   Rank,
@@ -11,9 +12,13 @@ export type PageSection =
   | "info"
   | "weaponWeakness"
   | "elementWeakness"
-  | "statusEffects";
+  | "statusEffects"
+  | "kinsectExtracts";
 
-export type Monster = MonsterInfo & MonsterWeakness & StatusEffects;
+export type Monster = MonsterInfo &
+  MonsterWeakness &
+  StatusEffects &
+  KinsectExtracts;
 
 export type MonsterInfo = {
   name: string;
@@ -37,6 +42,10 @@ type StatusEffects = {
 type MonsterStatusEffect =
   | typeof MONSTER_ELEMENTAL_BLIGHTS[number]
   | typeof MONSTER_ABNORMAL_STATUSES[number];
+
+type KinsectExtracts = {
+  kinsectExtracts: Record<KinsectExtract, string[]>;
+};
 
 export type MaterialChance = {
   amount?: number;
