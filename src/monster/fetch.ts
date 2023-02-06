@@ -16,8 +16,10 @@ import {
   getSection,
   toCamel,
   getTableRows,
+  getHorizontalData,
+  isHTMLTable,
 } from "@/utils";
-import { Monster, MonsterInfo, PageSection, Weakness } from "./types";
+import { Monster, MonsterInfo, PageSection } from "./types";
 
 const sectionLookup: { text: string; section: PageSection }[] = [
   {
@@ -31,6 +33,10 @@ const sectionLookup: { text: string; section: PageSection }[] = [
   {
     text: "elemental weakness breakdown",
     section: "elementWeakness",
+  },
+  {
+    text: "status effect",
+    section: "statusEffects",
   },
 ];
 
@@ -49,7 +55,10 @@ export async function getMonster(id: number): Promise<Monster | undefined> {
   /**
    * Read info from the info box table
    */
-  const [nameRow, _, ...statsRows] = (data.info as HTMLTableElement).rows;
+  if (!isHTMLTable(data.info))
+    throw Error("Could not find basic monster info table");
+
+  const [nameRow, _, ...statsRows] = data.info.rows;
 
   const infoCells = chunk(
     statsRows.flatMap((row) => {
@@ -86,11 +95,12 @@ export async function getMonster(id: number): Promise<Monster | undefined> {
   /**
    * Read info from the weakness breakdowns
    */
-  const weaknessToAttack = data.weaponWeakness as HTMLTableElement;
-  const weaknessToElement = data.elementWeakness as HTMLTableElement;
+  if (!isHTMLTable(data.weaponWeakness) || !isHTMLTable(data.elementWeakness))
+    throw Error("Could not find monster weakness tables");
+
   const weaknessBreakdown = getWeaknesses([
-    weaknessToAttack,
-    weaknessToElement,
+    data.weaponWeakness,
+    data.elementWeakness,
   ]);
 
   const monster: Monster = {

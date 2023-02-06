@@ -34,10 +34,10 @@ export const toCleanText = (el: HTMLElement): string => {
 
 /**
  * Get table data as an object { row1: { column1: cellData, column2: cellData } }
- * @param table 
- * @param keyParseFn 
- * @param dataParseFn 
- * @returns 
+ * @param table
+ * @param keyParseFn
+ * @param dataParseFn
+ * @returns
  */
 export const getTableRows = <T>(
   table: HTMLTableElement,
@@ -281,3 +281,11 @@ export const getMatchingItems: GetMatchingItemsType = <T extends string>(
 
   return input.map(getElementOrUndefined).filter(Boolean) as T[];
 };
+
+/**
+ * Type guard: check if element exists and is a HTML table
+ * @param el Element to check
+ * @returns boolean
+ */
+export const isHTMLTable = (el?: HTMLElement): el is HTMLTableElement =>
+  !!el && el.tagName === "TABLE";

@@ -1,6 +1,10 @@
 import { AbnormalStatus, AttackType, Element, Rank } from "@/types";
 
-export type PageSection = "info" | "weaponWeakness" | "elementWeakness";
+export type PageSection =
+  | "info"
+  | "weaponWeakness"
+  | "elementWeakness"
+  | "statusEffects";
 
 export type Monster = MonsterInfo &
   MonsterWeakness & {
