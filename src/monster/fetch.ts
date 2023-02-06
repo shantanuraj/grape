@@ -1,10 +1,12 @@
-import { camelCase, chunk, isEqual, merge } from "lodash";
+import { chunk, isEqual, merge } from "lodash";
 
 import {
   AbnormalStatus,
   ABNORMAL_STATUSES,
   Element,
   ELEMENTS,
+  MONSTER_ABNORMAL_STATUSES,
+  MONSTER_ELEMENTAL_BLIGHTS,
   WEAPON_DAMAGE_TYPES,
 } from "@/types";
 import { getPage } from "@/wiki";
@@ -53,7 +55,7 @@ export async function getMonster(id: number): Promise<Monster | undefined> {
   });
 
   /**
-   * Read info from the info box table
+   * Read info from the info box
    */
   if (!isHTMLTable(data.info))
     throw Error("Could not find basic monster info table");
@@ -103,12 +105,21 @@ export async function getMonster(id: number): Promise<Monster | undefined> {
     data.elementWeakness,
   ]);
 
+  /**
+   * Read status effects table
+   */
+  if (!isHTMLTable(data.statusEffects))
+    throw Error("Could not find status effects table");
+
+  const statusEffects = getStatusEffects(data.statusEffects);
+
   const monster: Monster = {
     ...info,
     weaknessBreakdown,
+    statusEffects,
   };
 
-  // console.log(monster);
+  console.log(monster);
 
   // const [kinsect, breakable, severable] = getMonsterPartData(page);
 
@@ -172,13 +183,49 @@ const isWeaknessBreakdown = (data: {
   breakdowns.forEach((breakdown) => {
     // each part should contain data for each element
     const attackTypes = Object.keys(breakdown);
-    if (!isEqual(attackTypes, [...WEAPON_DAMAGE_TYPES, ...ELEMENTS]))
+    if (
+      !isEqual(attackTypes.sort(), [...WEAPON_DAMAGE_TYPES, ...ELEMENTS].sort())
+    )
       return false;
 
-    // all damage values shoudl be integers
+    // all damage values should be integers
     const damage = Object.values(breakdown);
     if (damage.find((i) => !Number.isInteger(i))) return false;
   });
+
+  return true;
+};
+
+const getStatusEffects = (
+  table: HTMLTableElement
+): Monster["statusEffects"] => {
+  const data = getHorizontalData<number>(
+    table,
+    (header) => toCamel(header),
+    (value) => (value.textContent ?? "").split("★").length - 1
+  );
+
+  if (isStatusEffects(data)) return data;
+  throw Error("Error parsing status effect information");
+};
+
+const isStatusEffects = (
+  data: Record<string, number>
+): data is Monster["statusEffects"] => {
+  // table should have all possible monster status effects
+  const monsterStatusEffects = [
+    ...MONSTER_ELEMENTAL_BLIGHTS,
+    ...MONSTER_ABNORMAL_STATUSES,
+  ];
+  if (!isEqual(Object.keys(data).sort(), monsterStatusEffects.sort()))
+    return false;
+
+  // all effectiveness values should be integers
+  const effectiveness = Object.values(data);
+  if (effectiveness.find((i) => !Number.isInteger(i))) return false;
+
+  // all effectiveness values should be in the range 0 - 3
+  if (effectiveness.find((i) => i < 0 || i > 3)) return false;
 
   return true;
 };

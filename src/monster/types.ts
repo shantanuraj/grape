@@ -1,4 +1,11 @@
-import { AbnormalStatus, AttackType, Element, Rank } from "@/types";
+import {
+  AbnormalStatus,
+  AttackType,
+  Element,
+  MONSTER_ABNORMAL_STATUSES,
+  MONSTER_ELEMENTAL_BLIGHTS,
+  Rank,
+} from "@/types";
 
 export type PageSection =
   | "info"
@@ -6,18 +13,7 @@ export type PageSection =
   | "elementWeakness"
   | "statusEffects";
 
-export type Monster = MonsterInfo &
-  MonsterWeakness & {
-    //   ailments: {
-    //     [k in StatusEffect]: number;
-    //   };
-    //   kinsect?: Kinsect;
-    //   breakable: string[];
-    //   severable: string[];
-    //   items: string[];
-    //   quests: Quest[];
-    //   materials: MaterialsByRank;
-  };
+export type Monster = MonsterInfo & MonsterWeakness & StatusEffects;
 
 export type MonsterInfo = {
   name: string;
@@ -32,8 +28,15 @@ export type MonsterInfo = {
 
 // weakness breakdown - { head: { "sever": 45, blunt: "60" ... } }
 type MonsterWeakness = { weaknessBreakdown: Record<string, Weakness> };
+type Weakness = Record<AttackType, number>;
 
-export type Weakness = Record<AttackType, number>;
+type StatusEffects = {
+  statusEffects: Record<MonsterStatusEffect, number>;
+};
+
+type MonsterStatusEffect =
+  | typeof MONSTER_ELEMENTAL_BLIGHTS[number]
+  | typeof MONSTER_ABNORMAL_STATUSES[number];
 
 export type MaterialChance = {
   amount?: number;

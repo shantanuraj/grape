@@ -37,7 +37,7 @@ export const toCleanText = (el: HTMLElement): string => {
  * @param table
  * @param keyParseFn
  * @param dataParseFn
- * @returns
+ * @returns data object
  */
 export const getTableRows = <T>(
   table: HTMLTableElement,
@@ -78,41 +78,31 @@ export const getTableRows = <T>(
  * @param table Horizontal table to be converted
  * @returns object with heading text as keys, and cell text as values
  */
-export const getHorizontalData = (
-  table: HTMLTableElement
-): Record<string, string> => {
+export const getHorizontalData = <T>(
+  table: HTMLTableElement,
+  headingParseFn?: (cell: HTMLTableCellElement) => string,
+  dataParseFn?: (cell: HTMLTableCellElement) => T
+): Record<string, T> => {
+  const parseHeading = headingParseFn ? headingParseFn : toCleanText;
+  const parseData = dataParseFn ? dataParseFn : toCleanText;
+
   const headings: string[] = [...table.rows].reduce(
-    (acc, row, i) => {
-      // WIP
-      console.log([...row.cells].map((c) => toCleanText(c)));
-      // i % 0 ? [...acc] : [...acc, ...row.cells.map((c) => toCleanText(c))];
-
-      return [...acc];
-    },
-
-    []
+    (acc, row, i) =>
+      !(i % 2)
+        ? [...acc, ...Array.from(row.cells).map((c) => parseHeading(c))]
+        : [...acc],
+    [] as string[]
   );
 
-  // const headings: string[] = [];
-  // const data: string[] = [];
+  const data: T[] = [...table.rows].reduce(
+    (acc, row, i) =>
+      i % 2
+        ? [...acc, ...Array.from(row.cells).map((c) => parseData(c))]
+        : [...acc],
+    [] as any
+  );
 
-  // [...table.rows].forEach((row, i) => {
-  //   console.log(row.cells[0].textContent!, i);
-  //   if (i % 0) {
-  //     console.log("data");
-  //     data.concat([...row.cells].map((c) => toCleanText(c)));
-  //     return;
-  //   }
-  //   console.log("heading");
-  //   headings.concat([...row.cells].map((c) => toCleanText(c)));
-  // });
-  // console.log(headings, data);
-
-  // return headings.reduce(
-  //   (acc, heading, i) => ({ ...acc, [heading]: data[i] }),
-  //   {}
-  // );
-  return { a: "b" };
+  return Object.fromEntries(headings.map((h, i) => [h, data[i]]));
 };
 
 /**
@@ -186,7 +176,7 @@ export const getAllDataTables = (
 ): [string, HTMLElement][] => {
   const allData: [string, HTMLElement][] = [];
   page
-    .querySelectorAll<HTMLHeadingElement>("h1, h2, h3, h4, h5, h6")
+    .querySelectorAll<HTMLHeadingElement>("h1, h2, h3, h4, h5, h6, p")
     .forEach((heading) => {
       const nextElement = heading.nextElementSibling as HTMLElement;
       if (!nextElement) return;
